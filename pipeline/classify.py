@@ -1,3 +1,5 @@
+"""Classifies a photographed letter as the safety gate before summarizing."""
+
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -48,7 +50,9 @@ When classification is uncertain between government and suspicious, prefer suspi
 a false alarm is safer than helping a scam succeed.
 
 If category is suspicious, list the specific red flags you observed. Otherwise return an \
-empty list."""
+empty list. Describe each red flag generically (e.g. "asks the reader to confirm their \
+NRIC number") — never quote the actual NRIC number, address, amount, or other personal \
+detail from the letter itself."""
 
 
 def classify_letter(image_path: Path, model: str = MODEL) -> ClassificationResult:

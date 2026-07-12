@@ -9,6 +9,8 @@ dependencies = [
     "twilio>=9.3",
     "python-dotenv>=1.0",
     "pillow>=10.4",
+    "requests>=2.32",
+    "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]

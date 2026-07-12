@@ -1,3 +1,5 @@
+"""Summarizes a photographed letter into a fixed, elder-friendly bilingual format."""
+
 from pathlib import Path
 from typing import Literal
 
@@ -9,15 +11,20 @@ _LANGUAGE_NAMES = {"en": "English", "zh": "Mandarin Chinese"}
 
 _STRUCTURES = {
     "en": """📬 This letter is from [agency].
-**What it says:** [3-4 short sentences, plain words, no unexpanded acronyms]
-**What you need to do:** [action, or "Nothing! ..." if none]
+**Action needed:** [Yes — one short line on what to do, or "No, nothing to do!"]
+**What it says:** [3-4 short sentences, each one idea, plain words, no unexpanded acronyms]
 **By when:** [date, or "No action needed."]
-[amount involved, if any]""",
+[amount involved, if any]
+[ONLY if an actual phone number is visible in the letter photo: "Questions? \
+Call [agency] at [the exact number shown]." Omit this line completely if no \
+phone number is visible — do not invent a generic "contact us" line.]""",
     "zh": """📬 这封信来自[机构]。
-**信里说什么：** [3-4句简单的话，不用缩写]
-**您需要做什么：** [要做的事，如果不需要就写"不需要做任何事！..."]
+**需要您做什么：** [是——用一句话简单说明要做的事，或写"不需要，什么都不用做！"]
+**信里说什么：** [3-4句简单的话，每句只说一件事，不用缩写]
 **截止日期：** [日期，或写"不需要采取任何行动。"]
-[如果有金额，写出来]""",
+[如果有金额，写出来]
+[仅当信件照片中确实可见电话号码时才写：有问题吗？可以致电[机构] [信中显示的确切号码] 询问。\
+如果信中没有电话号码，请完全省略这一行——不要编造一个没有号码的"联系我们"提示。]""",
 }
 
 _SYSTEM_PROMPT_TEMPLATE = """You write short, plain-language summaries of official letters \
@@ -29,9 +36,17 @@ target language, not left in English):
 {structure}
 
 Rules:
+- Lead with whether any action is needed — that's usually the reader's first worry,
+  resolve it immediately rather than making them read the whole thing first.
+- Each sentence covers exactly one idea. Prefer several short sentences over one
+  sentence with multiple clauses, even if every individual word is simple.
+- Use the same word for the same concept throughout — don't alternate between
+  e.g. "agency"/"department"/"office" for the same sender.
 - Short lines, one idea per line, key action bolded, no walls of text.
 - Simple everyday {language_name}, appropriate for an elderly reader.
-- Never state anything not present in the letter itself.
+- Never state anything not present in the letter itself. This includes the contact-number
+  line: only include it if a real phone number is visible, never a generic "contact us"
+  suggestion without one.
 - Never repeat the full NRIC number or full home address, even if visible in the letter.
 - If the photo is blurry, angled, or otherwise hard to read and you are not confident \
 about a specific date, amount, or other fact, do not guess. Say that detail is unclear \
@@ -76,5 +91,36 @@ def summarize_letter(image_path: Path, lang: Language = "en") -> str:
                 ],
             }
         ],
+    )
+    return "".join(block.text for block in response.content if block.type == "text")
+
+
+_TRANSLATE_SYSTEM_PROMPT = """Re-render the given letter summary in {language_name}, \
+keeping exactly the same structure, section labels (translated, not left in English), \
+line breaks, and bolding. Translate the content faithfully — do not add, drop, or \
+guess at any detail. Output only the re-rendered summary, nothing else."""
+
+
+def translate_summary(summary: str, target_lang: Language) -> str:
+    """Re-renders an already-generated summary in another language.
+
+    Text-only — no image is re-sent. Used for the WhatsApp language-toggle
+    reply, where the original photo is no longer available.
+
+    Args:
+        summary: A summary previously produced by `summarize_letter`.
+        target_lang: Output language, `"en"` or `"zh"`.
+
+    Returns:
+        The re-rendered summary.
+    """
+    client = get_client()
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=1024,
+        system=_TRANSLATE_SYSTEM_PROMPT.format(
+            language_name=_LANGUAGE_NAMES[target_lang]
+        ),
+        messages=[{"role": "user", "content": summary}],
     )
     return "".join(block.text for block in response.content if block.type == "text")

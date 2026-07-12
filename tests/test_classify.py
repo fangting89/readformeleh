@@ -1,3 +1,5 @@
+"""Tests for pipeline/classify.py's tool schema consistency."""
+
 from typing import get_args, get_type_hints
 
 from pipeline.classify import _TOOL, ClassificationResult, LetterCategory

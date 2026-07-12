@@ -123,29 +123,64 @@ the letter photo directly.
    unreadable. If suspicious, do not summarize (a plain-language summary of
    a scam letter helps the scammer). Instead: warn gently, list the red
    flags noticed, and refer to the ScamShield helpline 1799. This
-   complements ScamShield rather than competing with it.
+   complements ScamShield rather than competing with it. `red_flags` are
+   required to describe each issue generically (e.g. "asks the reader to
+   confirm their NRIC number"), never quoting the actual NRIC/address/
+   amount from the letter — this keeps them safe to log for debugging
+   without violating Design Decision 2.
+
+   **Known limitation, observed live, not yet fixed:** the same photo of a
+   genuine letter was classified `suspicious` on one run and `government`
+   on an identical re-run minutes later — `classify_letter` doesn't set a
+   `temperature`, so it's using the API default, which allows enough
+   run-to-run variance to flip the one decision in this pipeline that's
+   actually safety-critical. The well-established fix for a categorical
+   decision like this is `temperature=0` (variation is fine for
+   `summarize_letter`'s prose, not for this). Deferred rather than applied
+   blind — worth applying once there's a slightly larger real-letter
+   sample set to confirm it actually reduces the flip rate rather than
+   just making one systematic misclassification consistent instead of
+   intermittent.
 4. **Scope discipline.** v1 languages: English + Mandarin only. Malay,
    Tamil, and dialect audio (Hokkien/Cantonese) are named roadmap items,
    not v1 features. Twilio sandbox for the demo; the production path
    (WhatsApp Business API verification, PDPA review, AAC partnership) is
    documented but not built.
+5. **Bilingual by default, not asked for.** The obvious alternative —
+   asking "English or Chinese?" on first contact — has the same flaw it's
+   meant to solve: a sender who can't read English well enough to
+   understand the letter may not understand the question either, and it
+   adds a round trip for someone the evidence base already shows is
+   friction-sensitive. Instead: a sender's first summary is bilingual
+   (English + Mandarin shown together); replying "中文"/"English" once
+   remembers that preference for later summaries (a lasting exception to
+   statelessness, unlike the short-TTL last-summary cache — a person's
+   language doesn't go stale in 10 minutes). Costs one extra text-only
+   `translate_summary` call per first-contact letter versus a known
+   preference, which is cheap relative to the vision call and worth it to
+   never risk a sender not understanding the bot's own instructions.
 
 ## Output format for summaries (fixed structure)
 
 ```
 📬 This letter is from [agency].
-What it says: [3–4 short sentences, plain words, no unexpanded acronyms]
-What you need to do: [action, or "Nothing! ..." if none]
+Action needed: [Yes — one short line on what to do, or "No, nothing to do!"]
+What it says: [3–4 short sentences, each one idea, plain words, no unexpanded acronyms]
 By when: [date, or "No action needed."]
 [amount involved, if any]
+[If the letter shows an enquiry phone number: "Questions? Call [agency] at [number]."]
 ```
 
-Elder-friendly formatting: short lines, one idea per line, key action
-bolded, no walls of text. Reading level: simple everyday English (or
-simple Mandarin) — section labels are translated too, not left in English.
-Never state anything not present in the letter itself: if the photo is too
-blurry or angled to be confident about a specific date, amount, or other
-fact, the summary says so explicitly rather than guessing.
+Action-needed leads the summary, before the explanation — that's usually
+the reader's first worry, so it's resolved before anything else. Elder-
+friendly formatting: short lines, one idea per sentence (not just simple
+words — a multi-clause sentence is still harder to parse), consistent
+terminology for the same concept throughout, key action bolded, no walls
+of text. Reading level: simple everyday English (or simple Mandarin) —
+section labels are translated too, not left in English. Never state
+anything not present in the letter itself: if the photo is too blurry or
+angled to be confident about a specific date, amount, or other fact, the
+summary says so explicitly rather than guessing.
 
 ## Roadmap
 

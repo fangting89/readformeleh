@@ -1,3 +1,5 @@
+"""Tests for pipeline/client.py's image encoding."""
+
 import base64
 import io
 

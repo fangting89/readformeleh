@@ -1,3 +1,5 @@
+"""CLI entrypoint: classify then summarize a letter photo from the command line."""
+
 import argparse
 from pathlib import Path
 

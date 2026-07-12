@@ -1,3 +1,5 @@
+"""Tests for pipeline/config.py's environment variable handling."""
+
 import pytest
 
 from pipeline.config import require_env

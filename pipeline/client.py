@@ -1,3 +1,5 @@
+"""Shared Anthropic client and image encoding helpers."""
+
 import base64
 import io
 from pathlib import Path
