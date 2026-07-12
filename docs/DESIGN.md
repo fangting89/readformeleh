@@ -78,7 +78,10 @@ By when: [date, or "No action needed."]
 
 Elder-friendly formatting: short lines, one idea per line, key action
 bolded, no walls of text. Reading level: simple everyday English (or
-simple Mandarin). Never state anything not present in the letter itself.
+simple Mandarin) — section labels are translated too, not left in English.
+Never state anything not present in the letter itself: if the photo is too
+blurry or angled to be confident about a specific date, amount, or other
+fact, the summary says so explicitly rather than guessing.
 
 ## Roadmap
 

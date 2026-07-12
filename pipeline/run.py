@@ -6,6 +6,7 @@ from pipeline.summarize import summarize_letter
 
 
 def main() -> None:
+    """CLI entrypoint: classify then summarize a letter photo, if safe to."""
     parser = argparse.ArgumentParser(
         description="Summarize a photographed government letter."
     )
