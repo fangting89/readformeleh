@@ -50,6 +50,70 @@ the letter photo directly.
    deliberately uses a vision-native model call instead. This is not
    retrieval-augmented generation — there is no retrieval; the photo
    itself is the grounding context.
+
+   *Cost tradeoff, evaluated explicitly, not assumed away:* an OCR+text-LLM
+   pipeline (e.g. Tesseract + a text-only call) would plausibly cut the LLM
+   cost per letter several-fold, since image tokens dominate a vision
+   call's cost versus the few hundred text tokens an extracted letter
+   would need. At current pricing, a full classify+summarize round trip on
+   one photo runs roughly 1–2 cents; at the evidence base's scale (~1,400
+   seniors, a few letters/year each needing help) that's on the order of
+   $30–50/year in API cost — already trivial in absolute terms. OCR's
+   failure mode is exactly this product's core scenario (skewed, glared,
+   poorly-lit phone photos from elderly users), which is the same failure
+   mode that limited the prior kiosk solution. Trading a marginal,
+   already-small cost saving for degraded accuracy on the hardest cases
+   isn't a good trade, so OCR was rejected rather than not considered.
+   What *is* implemented for efficiency: `pipeline/client.py` downscales
+   images to a max 1568px edge before sending (Claude's vision token cost
+   scales with pixel count; resolution beyond that doesn't improve reading
+   accuracy on a document photo). Prompt caching between the classify and
+   summarize calls was evaluated and rejected — the two calls have
+   different system prompts and tool declarations, so Anthropic's cache
+   (which requires an identical prefix) would never hit, and a cache
+   *write* costs more than a plain input token, making it strictly worse
+   than doing nothing without a larger restructure into a shared-prefix
+   conversation. Also considered: merging classify+summarize into one call
+   with an optional summary field, which would roughly halve image-token
+   cost — rejected because it downgrades the safety gate from
+   "structurally impossible to generate a scam summary" (today, if
+   `classify_letter` returns `suspicious`, `summarize_letter` is simply
+   never called) to "the model was told to leave a field empty," for a
+   saving that's already trivial in absolute terms. Caching the (small,
+   per-function) system prompt itself was also tried and empirically
+   verified via the API's `usage.cache_read_input_tokens` field to be a
+   no-op — the prompt falls below Anthropic's minimum cacheable content
+   size, so nothing gets cached either way. Not kept, since a cache marker
+   that provably does nothing is worse than no marker at all.
+
+   Also benchmarked `claude-haiku-4-5` against `claude-sonnet-5` (then the
+   default) for both steps. For classify: matched Sonnet on all 6 samples,
+   including correctly flagging the scam specimen with a thorough red-flag
+   list. For summarize: matched on 3 of 4 repeated runs on the same clean
+   letter; one run stated a CPF balance incorrectly (off by a factor of
+   ~2), not reproduced on 3 follow-up runs — evidence of a small,
+   non-systematic numeric-hallucination risk, likely present at some rate
+   regardless of model tier, not something the "flag uncertainty" prompt
+   rule catches since it wasn't a bad-photo case. Also observed: on the
+   deliberately blurred sample, Haiku consistently abandons the fixed
+   output structure and replies in plain prose asking for a clearer
+   photo, rather than following the template with a hedged value. Arguably
+   safer than guessing, but a format inconsistency worth handling
+   explicitly in the Phase 2 message-formatting pass rather than left
+   implicit.
+
+   At current pricing, Haiku 4.5 ($1/$5 per MTok in/out) is exactly half
+   the cost of Sonnet 5's introductory rate ($2/$10 per MTok, in effect
+   through 31 Aug 2026) — a real but modest saving given the already-small
+   absolute cost (roughly half a cent per letter). Given this project runs
+   on personal API budget rather than an org's, and both classify (bounded
+   categorical decision) and summarize (templated extraction, not
+   open-ended reasoning) fit Anthropic's own stated guidance for
+   Haiku-appropriate tasks, `pipeline/client.py`'s default `MODEL` is
+   `claude-haiku-4-5-20251001` for both calls. `classify_letter` also
+   accepts a `model` override for further comparison if needed. Revisit
+   if real-letter testing surfaces wrong figures in a summary — that's a
+   real deployment concern, not a purely a hypothetical one.
 2. **Privacy by design.** Letters contain NRIC numbers, addresses, money
    figures. Nothing is stored. Prompts instruct the model to never repeat
    NRIC numbers or full addresses in summaries. No logging of message

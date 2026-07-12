@@ -8,13 +8,13 @@ dependencies = [
     "uvicorn>=0.32",
     "twilio>=9.3",
     "python-dotenv>=1.0",
+    "pillow>=10.4",
 ]
 
 [dependency-groups]
 dev = [
     "pre-commit>=3.8",
     "ruff>=0.6",
-    "pillow>=10.4",
     "jupyterlab>=4.2",
     "nbconvert>=7.16",
     "pytest>=8.3",

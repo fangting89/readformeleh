@@ -51,11 +51,12 @@ If category is suspicious, list the specific red flags you observed. Otherwise r
 empty list."""
 
 
-def classify_letter(image_path: Path) -> ClassificationResult:
+def classify_letter(image_path: Path, model: str = MODEL) -> ClassificationResult:
     """Classifies a photographed letter as the safety gate before summarizing.
 
     Args:
         image_path: Path to the letter photo (JPEG/PNG/GIF/WebP).
+        model: Override the default model, e.g. for cost/accuracy comparisons.
 
     Returns:
         A `ClassificationResult` with the category and, for suspicious
@@ -64,7 +65,7 @@ def classify_letter(image_path: Path) -> ClassificationResult:
     media_type, data = encode_image(image_path)
     client = get_client()
     response = client.messages.create(
-        model=MODEL,
+        model=model,
         max_tokens=1024,
         system=_SYSTEM_PROMPT,
         tools=[_TOOL],
