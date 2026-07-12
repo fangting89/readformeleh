@@ -1,0 +1,14 @@
+[project]
+name = "letter-kaki"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40",
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "twilio>=9.3",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pre-commit>=3.8", "ruff>=0.6"]

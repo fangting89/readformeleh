@@ -1,0 +1,8 @@
+.env
+samples/*
+!samples/.gitkeep
+!samples/README.md
+__pycache__/
+*.pyc
+.venv/
+venv/
