@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from pipeline.classify import classify_letter
-from pipeline.summarize import summarize_letter
+from pipeline.summarize import summarize_letter_checked, translate_summary
 
 
 def main() -> None:
@@ -20,11 +20,26 @@ def main() -> None:
     if result["category"] == "suspicious":
         print("This letter looks suspicious:", ", ".join(result["red_flags"]))
         return
+    # Unlike app/main.py, this branch and the one below never escalate to a
+    # stronger message after repeated failures: each CLI invocation is a
+    # fresh one-shot process with no sender identity to track a streak
+    # against, so there's no "consecutive" to count here.
     if result["category"] == "unreadable":
-        print("Couldn't read this photo clearly — try a clearer, well-lit shot.")
+        print("Couldn't read this photo clearly - try a clearer, well-lit shot.")
+        return
+    if result["image_quality"] == "degraded":
+        print(
+            f"Category looks like {result['category']}, but the photo is too degraded "
+            "to safely read specific figures - try a clearer, well-lit shot."
+        )
         return
 
-    print(summarize_letter(args.photo, lang=args.lang))
+    # image_quality is "clear" here, so the extra independent read in
+    # summarize_letter_checked is warranted (see its docstring). Always
+    # computed in English first, then translated, matching app/main.py's
+    # webhook path — this is the source of truth for both languages.
+    summary_en = summarize_letter_checked(args.photo)
+    print(translate_summary(summary_en, "zh") if args.lang == "zh" else summary_en)
 
 
 if __name__ == "__main__":

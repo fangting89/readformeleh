@@ -66,6 +66,37 @@ class RateLimiter:
         return True
 
 
+class ConsecutiveFailureCount:
+    """Tracks consecutive unreadable/degraded outcomes per sender, so a
+    string of failed photos can escalate the retry message beyond a
+    generic lighting tip to suggesting in-person help (see
+    docs/DESIGN.md's evidence base on staff time/stigma). TTL-bounded like
+    the other stores — a failure streak from an old session shouldn't
+    silently count toward a new one."""
+
+    def __init__(self, ttl_seconds: float = 1800):
+        self._ttl = ttl_seconds
+        self._counts: dict[str, tuple[int, float]] = {}
+
+    def record_failure(self, sender: str) -> int:
+        """Increments and returns the sender's current consecutive-failure
+        count, starting a fresh streak of 1 if the previous one has
+        expired or never existed."""
+        now = time.monotonic()
+        count, expires_at = self._counts.get(sender, (0, 0.0))
+        if now > expires_at:
+            count = 0
+        count += 1
+        self._counts[sender] = (count, now + self._ttl)
+        return count
+
+    def reset(self, sender: str) -> None:
+        """Clears a sender's streak — call whenever a photo comes back
+        legible (summarized successfully, or classified suspicious), not
+        just on an outright success."""
+        self._counts.pop(sender, None)
+
+
 class SeenMessages:
     """Tracks recently-processed Twilio MessageSids so a webhook retry
     (Twilio resends if it doesn't get a fast response) doesn't trigger a

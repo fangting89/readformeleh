@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app import messages
 from app.main import _language_cache, _language_preference, app
 
 client = TestClient(app)
@@ -39,9 +40,10 @@ def test_webhook_no_media_returns_usage_instructions(mock_verify):
 
 @patch("app.main.translate_summary", return_value="中文摘要")
 @patch("app.main.send_message")
-@patch("app.main.summarize_letter", return_value="an english summary")
+@patch("app.main.summarize_letter_checked", return_value="an english summary")
 @patch(
-    "app.main.classify_letter", return_value={"category": "government", "red_flags": []}
+    "app.main.classify_letter",
+    return_value={"category": "government", "image_quality": "clear", "red_flags": []},
 )
 @patch("app.main.download_media", return_value=b"fake-image-bytes")
 @patch("app.main.verify_signature", return_value=True)
@@ -69,9 +71,10 @@ def test_webhook_first_contact_sends_bilingual_summary(
 
 @patch("app.main.translate_summary")
 @patch("app.main.send_message")
-@patch("app.main.summarize_letter", return_value="an english summary")
+@patch("app.main.summarize_letter_checked", return_value="an english summary")
 @patch(
-    "app.main.classify_letter", return_value={"category": "government", "red_flags": []}
+    "app.main.classify_letter",
+    return_value={"category": "government", "image_quality": "clear", "red_flags": []},
 )
 @patch("app.main.download_media", return_value=b"fake-image-bytes")
 @patch("app.main.verify_signature", return_value=True)
@@ -95,9 +98,10 @@ def test_webhook_with_media_sends_english_only_when_preference_is_english(
 
 @patch("app.main.translate_summary", return_value="中文摘要")
 @patch("app.main.send_message")
-@patch("app.main.summarize_letter", return_value="an english summary")
+@patch("app.main.summarize_letter_checked", return_value="an english summary")
 @patch(
-    "app.main.classify_letter", return_value={"category": "government", "red_flags": []}
+    "app.main.classify_letter",
+    return_value={"category": "government", "image_quality": "clear", "red_flags": []},
 )
 @patch("app.main.download_media", return_value=b"fake-image-bytes")
 @patch("app.main.verify_signature", return_value=True)
@@ -119,7 +123,7 @@ def test_webhook_with_media_sends_chinese_only_when_preference_is_chinese(
 
 
 @patch("app.main.send_message")
-@patch("app.main.summarize_letter")
+@patch("app.main.summarize_letter_checked")
 @patch(
     "app.main.classify_letter",
     return_value={"category": "suspicious", "red_flags": ["urgent threat"]},
@@ -153,6 +157,9 @@ def test_webhook_suspicious_letter_skips_summary(
 def test_webhook_unreadable_letter_asks_for_retry(
     mock_verify, mock_download, mock_classify, mock_send
 ):
+    """A single, first-time unreadable result gets the baseline retry tip,
+    not the escalated in-person-help message (see the escalation tests
+    below for the second-in-a-row case)."""
     sender = "whatsapp:+10000000005"
     client.post(
         "/webhook",
@@ -163,6 +170,40 @@ def test_webhook_unreadable_letter_asks_for_retry(
             MediaUrl0="https://example.com/media/3",
         ),
     )
+    assert mock_send.call_args[0][0] == sender
+    assert mock_send.call_args[0][1] == messages.UNREADABLE_RETRY
+
+
+@patch("app.main.send_message")
+@patch("app.main.summarize_letter_checked")
+@patch(
+    "app.main.classify_letter",
+    return_value={
+        "category": "government",
+        "image_quality": "degraded",
+        "red_flags": [],
+    },
+)
+@patch("app.main.download_media", return_value=b"fake-image-bytes")
+@patch("app.main.verify_signature", return_value=True)
+def test_webhook_degraded_quality_skips_summary_even_with_known_category(
+    mock_verify, mock_download, mock_classify, mock_summarize, mock_send
+):
+    """A category can be determinable (government) while the photo is
+    still too degraded to safely extract specific figures from. This
+    must skip summarize_letter just like an outright unreadable photo,
+    not just a suspicious one (see docs/DESIGN.md Design Decision 3)."""
+    sender = "whatsapp:+10000000013"
+    client.post(
+        "/webhook",
+        data=_webhook_payload(
+            MessageSid="SM13",
+            From=sender,
+            NumMedia="1",
+            MediaUrl0="https://example.com/media/4",
+        ),
+    )
+    mock_summarize.assert_not_called()
     assert mock_send.call_args[0][0] == sender
     assert "clearly" in mock_send.call_args[0][1].lower()
 
@@ -234,3 +275,65 @@ def test_webhook_ignores_duplicate_message_sid(mock_verify):
     second = client.post("/webhook", data=payload)
     assert first.status_code == 200
     assert second.status_code == 200
+
+
+@patch("app.main.send_message")
+@patch(
+    "app.main.classify_letter", return_value={"category": "unreadable", "red_flags": []}
+)
+@patch("app.main.download_media", return_value=b"fake-image-bytes")
+@patch("app.main.verify_signature", return_value=True)
+def test_webhook_second_consecutive_unreadable_escalates_retry_message(
+    mock_verify, mock_download, mock_classify, mock_send
+):
+    sender = "whatsapp:+10000000014"
+    for i in range(2):
+        client.post(
+            "/webhook",
+            data=_webhook_payload(
+                MessageSid=f"SM14_{i}",
+                From=sender,
+                NumMedia="1",
+                MediaUrl0="https://example.com/media/5",
+            ),
+        )
+    assert mock_send.call_args[0][1] == messages.UNREADABLE_RETRY_ESCALATED
+
+
+@patch("app.main.send_message")
+@patch("app.main.summarize_letter_checked", return_value="an english summary")
+@patch(
+    "app.main.classify_letter",
+    return_value={"category": "government", "image_quality": "clear", "red_flags": []},
+)
+@patch("app.main.download_media", return_value=b"fake-image-bytes")
+@patch("app.main.verify_signature", return_value=True)
+def test_webhook_successful_summary_resets_failure_streak(
+    mock_verify, mock_download, mock_classify, mock_summarize, mock_send
+):
+    """A legible photo after prior failures shouldn't carry an escalated
+    tone into a later, unrelated failure streak."""
+    sender = "whatsapp:+10000000016"
+    client.post(
+        "/webhook",
+        data=_webhook_payload(
+            MessageSid="SM16_success",
+            From=sender,
+            NumMedia="1",
+            MediaUrl0="https://example.com/media/7",
+        ),
+    )
+    mock_classify.return_value = {
+        "category": "unreadable",
+        "red_flags": [],
+    }
+    client.post(
+        "/webhook",
+        data=_webhook_payload(
+            MessageSid="SM16_fail",
+            From=sender,
+            NumMedia="1",
+            MediaUrl0="https://example.com/media/8",
+        ),
+    )
+    assert mock_send.call_args[0][1] == messages.UNREADABLE_RETRY

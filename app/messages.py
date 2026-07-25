@@ -32,6 +32,15 @@ UNREADABLE_RETRY = (
     "把信件放平，拍一张更清楚的照片吗？"
 )
 
+UNREADABLE_RETRY_ESCALATED = (
+    "This is the second photo in a row I couldn't read clearly. If it's "
+    "hard to get a clear shot, it might help to ask a family member to "
+    "try, or bring the letter to your nearest Active Ageing Centre — "
+    "staff there can help you read it in person.\n"
+    "这已经是连续第二张不够清楚的照片了。如果拍照有困难，可以请家人帮忙，"
+    "或者把信件带到附近的乐龄活动中心，工作人员可以当面帮您看信。"
+)
+
 RATE_LIMITED = (
     "You've sent quite a few letters recently — please wait a bit before "
     "sending another.\n"

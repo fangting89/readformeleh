@@ -9,10 +9,16 @@ from fastapi import BackgroundTasks, FastAPI, Request, Response
 from twilio.twiml.messaging_response import MessagingResponse
 
 from app import messages
-from app.state import LanguageCache, LanguagePreference, RateLimiter, SeenMessages
+from app.state import (
+    ConsecutiveFailureCount,
+    LanguageCache,
+    LanguagePreference,
+    RateLimiter,
+    SeenMessages,
+)
 from app.twilio_client import download_media, send_message, verify_signature
 from pipeline.classify import classify_letter
-from pipeline.summarize import summarize_letter, translate_summary
+from pipeline.summarize import summarize_letter_checked, translate_summary
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("letter_kaki")
@@ -23,6 +29,12 @@ _language_cache = LanguageCache()
 _language_preference = LanguagePreference()
 _rate_limiter = RateLimiter()
 _seen_messages = SeenMessages()
+_consecutive_failures = ConsecutiveFailureCount()
+
+# Consecutive unreadable/degraded results from the same sender before the
+# retry message escalates to suggesting in-person help (see
+# docs/DESIGN.md's evidence base on staff time/stigma).
+_ESCALATION_THRESHOLD = 2
 
 
 def _hash_sender(sender: str) -> str:
@@ -35,6 +47,17 @@ def _twiml(body: str) -> Response:
     response = MessagingResponse()
     response.message(body)
     return Response(content=str(response), media_type="application/xml")
+
+
+def _unreadable_reply(sender: str) -> str:
+    """Records a failed (unreadable or degraded) attempt for the sender and
+    returns the appropriate retry message — the baseline tip on the first
+    failure, or the escalated in-person-help suggestion once
+    _ESCALATION_THRESHOLD consecutive failures have piled up."""
+    count = _consecutive_failures.record_failure(sender)
+    if count >= _ESCALATION_THRESHOLD:
+        return messages.UNREADABLE_RETRY_ESCALATED
+    return messages.UNREADABLE_RETRY
 
 
 @app.get("/health")
@@ -122,18 +145,37 @@ def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
                     sender_hash,
                     result["red_flags"],
                 )
+                _consecutive_failures.reset(sender)  # photo was legible
                 send_message(sender, messages.SUSPICIOUS_WARNING)
                 return
             if result["category"] == "unreadable":
-                send_message(sender, messages.UNREADABLE_RETRY)
+                send_message(sender, _unreadable_reply(sender))
+                return
+            if result["image_quality"] == "degraded":
+                # Category was determinable but specific figures weren't.
+                # a stricter bar than "unreadable". Route to the same
+                # retry message rather than risk summarize_letter guessing
+                # at an amount or date it can't actually read (see
+                # docs/DESIGN.md Design Decision 3 for what this caught).
+                logger.info(
+                    "sender=%s category=%s but image_quality=degraded, skipping summarize",
+                    sender_hash,
+                    result["category"],
+                )
+                send_message(sender, _unreadable_reply(sender))
                 return
 
             # Always generate the English summary as the base — it's the
             # letter's original language, so a direct extraction is more
             # faithful than translating a translation. Cache it so later
             # toggles/preferences can re-render from a consistent source.
-            summary_en = summarize_letter(image_path, lang="en")
+            # image_quality is "clear" here (the "degraded" branch above
+            # already returned), so summarize_letter_checked's extra
+            # independent read is warranted — see its docstring and
+            # docs/DESIGN.md for the hallucination case it catches.
+            summary_en = summarize_letter_checked(image_path)
             _language_cache.set(sender, summary_en)
+            _consecutive_failures.reset(sender)
 
             preference = _language_preference.get(sender)
             if preference == "en":
