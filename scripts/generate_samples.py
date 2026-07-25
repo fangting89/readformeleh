@@ -1,124 +1,84 @@
-"""Renders synthetic placeholder letters into samples/ for early pipeline
-development, before real (redacted) letter photos are available. All NRIC
-numbers, names, and amounts below are fake."""
+"""Renders the eval golden set (`eval.dataset.SPECIMENS`) into samples/ as
+JPEGs, for pipeline development and for `eval/run_eval.py` to score against.
+Re-run whenever `eval/dataset.py` changes."""
 
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from eval.dataset import SPECIMENS, Specimen
+
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
 
-LETTERS = {
-    "cpf_statement": """CENTRAL PROVIDENT FUND BOARD
-CPF Contribution Statement
 
-Dear Member,
-
-NRIC: S1234567A (placeholder)
-This statement confirms your CPF contributions for
-the period Jan 2026 - Jun 2026.
-
-Total contributions received: $9,240.00
-Your CPF balances as at 30 Jun 2026:
-  Ordinary Account: $54,120.33
-  Special Account: $21,880.10
-  MediSave Account: $18,502.44
-
-No action is required. This statement is for your
-records only.
-
-CPF Board""",
-    "iras_notice": """INLAND REVENUE AUTHORITY OF SINGAPORE
-Notice of Assessment - Year of Assessment 2026
-
-Dear Taxpayer,
-
-Tax Reference: S1234567A (placeholder)
-
-Your income tax for YA2026 has been assessed:
-  Chargeable Income: $52,000
-  Tax Payable: $1,180.00
-
-Payment is due by 31 Aug 2026. You may pay via
-GIRO, PayNow, or AXS. Late payment incurs a 5%
-penalty.
-
-IRAS""",
-    "town_council_notice": """ANG MOK KIO TOWN COUNCIL
-Conservancy & Service Charges - Reminder Notice
-
-Dear Resident,
-
-Block 123 Ang Mo Kio Ave 4, #05-678
-
-Your conservancy charges for Jul 2026 amounting to
-$89.50 remain unpaid. Please settle this amount by
-25 Jul 2026 to avoid a late payment surcharge.
-
-Payment can be made via AXS, SAM, or GIRO.
-
-Ang Mo Kio Town Council""",
-    "polyclinic_bill": """NATIONAL HEALTHCARE GROUP POLYCLINICS
-Outpatient Bill
-
-Dear Patient,
-
-Visit date: 3 Jul 2026
-Consultation & Medication: $42.00
-Subsidy applied: -$25.00
-Amount payable: $17.00
-
-Please settle payment within 30 days at any
-polyclinic counter or via the HealthHub app.
-
-NHG Polyclinics""",
-    "scam_letter": """URGENT NOTICE - IMMEDIATE ACTION REQUIRED
-
-Dear Valued Customer,
-
-Our records show you have an outstanding
-government fine of $3,500 that must be paid TODAY
-to avoid arrest and legal action. Failure to
-respond within 2 hours will result in a warrant
-being issued.
-
-To settle this matter immediately, transfer the
-amount to PayNow number 8123 4567 and reply with
-your full NRIC number and bank account details for
-verification.
-
-This is your FINAL warning.
-
-Enforcement Division""",
-}
-
-BLURRED_FROM = "town_council_notice"
-
-
-def render_letter(text: str, path: Path) -> None:
+def _draw_text(text: str) -> Image.Image:
     canvas = Image.new("RGB", (800, 1000), "white")
     draw = ImageDraw.Draw(canvas)
     font = ImageFont.load_default(size=20)
     draw.multiline_text((40, 40), text, fill="black", font=font, spacing=10)
-    canvas.save(path, "JPEG")
+    return canvas
 
 
-def render_blurred_variant(source_text: str, path: Path) -> None:
-    canvas = Image.new("RGB", (800, 1000), "white")
-    draw = ImageDraw.Draw(canvas)
-    font = ImageFont.load_default(size=20)
-    draw.multiline_text((40, 40), source_text, fill="black", font=font, spacing=10)
+def render_normal(text: str) -> Image.Image:
+    return _draw_text(text)
+
+
+def render_blurred(text: str) -> Image.Image:
+    canvas = _draw_text(text)
     canvas = canvas.rotate(6, expand=True, fillcolor="white")
-    canvas = canvas.filter(ImageFilter.GaussianBlur(radius=3))
-    canvas.save(path, "JPEG")
+    return canvas.filter(ImageFilter.GaussianBlur(radius=3))
+
+
+def render_heavy_blur(text: str) -> Image.Image:
+    """A harder degradation than render_blurred, which turned out to
+    still be confidently readable (see eval/dataset.py note on
+    bad_quality_photo). Kept as the specimen that actually exercises the
+    unreadable path."""
+    canvas = _draw_text(text)
+    canvas = canvas.rotate(15, expand=True, fillcolor="white")
+    return canvas.filter(ImageFilter.GaussianBlur(radius=6))
+
+
+def render_low_light(text: str) -> Image.Image:
+    """Low contrast plus blur, not just dimmer. A uniform brightness cut
+    preserves the black/white contrast ratio and stays legible to a
+    vision model, so this blends toward mid-gray first to actually
+    collapse the contrast a bad-lighting phone photo would lose."""
+    canvas = _draw_text(text)
+    gray = Image.new("RGB", canvas.size, (110, 110, 110))
+    low_contrast = Image.blend(canvas, gray, alpha=0.88)
+    return low_contrast.filter(ImageFilter.GaussianBlur(radius=4))
+
+
+def render_partial_crop(text: str) -> Image.Image:
+    """Crops away the left half of every line (not just the tail of the
+    document) so every line is a word-fragment. A cleanly cropped header
+    would still let a model confidently identify the sender, which isn't
+    the failure mode this specimen is meant to exercise."""
+    canvas = _draw_text(text)
+    width, height = canvas.size
+    return canvas.crop((int(width * 0.45), 0, width, height))
+
+
+_RENDERERS = {
+    "normal": render_normal,
+    "blurred": render_blurred,
+    "heavy_blur": render_heavy_blur,
+    "low_light": render_low_light,
+    "partial_crop": render_partial_crop,
+}
+
+
+def render_specimen(specimen: Specimen, path: Path) -> None:
+    image = _RENDERERS[specimen.render](specimen.letter_text)
+    image.convert("RGB").save(path, "JPEG")
 
 
 def main() -> None:
     SAMPLES_DIR.mkdir(exist_ok=True)
-    for name, text in LETTERS.items():
-        render_letter(text, SAMPLES_DIR / f"{name}.jpg")
-    render_blurred_variant(LETTERS[BLURRED_FROM], SAMPLES_DIR / "bad_quality_photo.jpg")
-    print(f"Generated {len(LETTERS) + 1} sample letters in {SAMPLES_DIR}")
+    for specimen in SPECIMENS:
+        render_specimen(specimen, SAMPLES_DIR / f"{specimen.name}.jpg")
+    print(f"Generated {len(SPECIMENS)} sample letters in {SAMPLES_DIR}")
 
 
 if __name__ == "__main__":
