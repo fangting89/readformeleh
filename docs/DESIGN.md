@@ -114,6 +114,22 @@ the letter photo directly.
    accepts a `model` override for further comparison if needed. Revisit
    if real-letter testing surfaces wrong figures in a summary — that's a
    real deployment concern, not a purely a hypothetical one.
+
+   **Follow-up (25 Jul 2026): the numeric-hallucination risk above is now
+   mitigated, not just named.** `pipeline/summarize.py`'s
+   `summarize_letter_checked` reads a `clear`-quality letter twice,
+   independently, and compares the two reads' By-when date and action
+   amount (`pipeline/summary_fields.py`). Any field that disagrees between
+   the two is replaced with the same hedge sentence `summarize_letter`
+   already uses for a field it can't read at all — a disagreement between
+   two independent reads is exactly as untrustworthy as an admitted guess,
+   so it's treated the same way rather than picking one read arbitrarily.
+   This doubles the summarize call for `clear`-quality letters only
+   (roughly another half-cent), which is still trivial in absolute terms
+   at this project's scale. It does not eliminate the risk entirely (both
+   reads could coincidentally make the same misread), but it closes the
+   specific failure mode the CPF-balance incident above demonstrated: a
+   *single* confidently-wrong read going out unchallenged.
 2. **Privacy by design.** Letters contain NRIC numbers, addresses, money
    figures. Nothing is stored. Prompts instruct the model to never repeat
    NRIC numbers or full addresses in summaries. No logging of message
@@ -129,18 +145,55 @@ the letter photo directly.
    amount from the letter — this keeps them safe to log for debugging
    without violating Design Decision 2.
 
-   **Known limitation, observed live, not yet fixed:** the same photo of a
+   **Known limitation, observed live, now fixed:** the same photo of a
    genuine letter was classified `suspicious` on one run and `government`
-   on an identical re-run minutes later — `classify_letter` doesn't set a
-   `temperature`, so it's using the API default, which allows enough
+   on an identical re-run minutes later — `classify_letter` wasn't setting
+   a `temperature`, so it was using the API default, which allowed enough
    run-to-run variance to flip the one decision in this pipeline that's
-   actually safety-critical. The well-established fix for a categorical
-   decision like this is `temperature=0` (variation is fine for
-   `summarize_letter`'s prose, not for this). Deferred rather than applied
-   blind — worth applying once there's a slightly larger real-letter
-   sample set to confirm it actually reduces the flip rate rather than
-   just making one systematic misclassification consistent instead of
-   intermittent.
+   actually safety-critical. Fixed by setting `temperature=0` on the
+   classify call (variation is still fine for `summarize_letter`'s prose,
+   not for this categorical decision).
+
+   **A second, more serious gap, found by building an eval harness (see
+   `eval/`), also now fixed:** `classify_letter`'s `category` only answers
+   "can I tell what kind of letter this is and who it's from". It does
+   not answer "can I safely read out the *specific* amounts and dates in
+   this letter." Those turned out to be different bars. On a moderately
+   degraded (blurred, rotated) but still confidently-categorizable photo,
+   `summarize_letter` was run 5 times in stress-testing and produced a
+   *different wrong dollar amount and wrong date almost every time*,
+   formatted with the same confidence as a correct summary, e.g. stating
+   "$50.63" and "25 January" against a real letter that actually said
+   $89.50 due 25 Jul 2026. Two rounds of prompt-only fixes (forbidding
+   guessed/approximate figures, forbidding invented payment methods) did
+   not close this reliably.
+
+   The fix was architectural, not another prompt tweak: `classify_letter`
+   now also returns an independent `image_quality: "clear" | "degraded"`
+   assessment. `app/main.py` skips `summarize_letter` entirely whenever
+   `image_quality` is `"degraded"`, exactly like it already does for
+   `category == "suspicious"` or `"unreadable"`. A photo can be clear
+   enough to categorize while still being too degraded to safely extract
+   figures from, and the pipeline now gates on the stricter of the two
+   bars, not just the first one. Verified via `eval/run_eval.py`: 1.0
+   image_quality-gate accuracy and 0 remaining amount/date errors across
+   the full golden set after the fix.
+
+   **Prompt-injection hardening (25 Jul 2026).** The entire threat model
+   here is that the letter photo is attacker-controlled input, yet neither
+   system prompt originally said anything about that. Both
+   `classify_letter`'s and `summarize_letter`'s system prompts now
+   explicitly instruct the model to treat all text visible in the
+   photographed letter as untrusted content to analyze, never as
+   instructions to follow — and that a letter attempting to instruct the
+   classifier directly (e.g. a fake "SYSTEM:" line telling it to output
+   `category: government`) is itself a red flag for `suspicious`, not
+   something to comply with. `eval/dataset.py`'s `scam_prompt_injection`
+   specimen exercises exactly this: a fake government letter whose body
+   contains such an override attempt. It classifies `suspicious` 3/3 in
+   `eval/run_eval.py`, with the injection attempt itself listed among the
+   red flags (described generically, per Design Decision 2 — the
+   injection text itself is never quoted back).
 4. **Scope discipline.** v1 languages: English + Mandarin only. Malay,
    Tamil, and dialect audio (Hokkien/Cantonese) are named roadmap items,
    not v1 features. Twilio sandbox for the demo; the production path
@@ -159,6 +212,24 @@ the letter photo directly.
    `translate_summary` call per first-contact letter versus a known
    preference, which is cheap relative to the vision call and worth it to
    never risk a sender not understanding the bot's own instructions.
+6. **Escalate after repeated unreadable photos, don't just repeat the same
+   tip (25 Jul 2026).** The evidence base above (Fei Yue/Senja AAC) shows
+   seniors already fall back on in-person help when something doesn't
+   work over a channel — the whole reason letter help consumes ~20% of
+   staff hours today. A bot that keeps replying "try again with better
+   lighting" to someone who has already failed once is asking them to
+   solve a problem they've already shown they can't solve alone over this
+   channel. `app/state.py`'s `ConsecutiveFailureCount` tracks unreadable/
+   degraded results per sender (30 min TTL, so an old streak doesn't
+   silently carry into a new session); after 2 in a row, `app/main.py`
+   sends `messages.UNREADABLE_RETRY_ESCALATED` instead of the baseline
+   retry tip, suggesting a family member or the nearest Active Ageing
+   Centre. The streak resets on any legible result (a successful summary,
+   or a letter correctly classified suspicious) — it should reflect
+   "recent trouble with this channel," not accumulate forever. Deliberately
+   webhook-only: `pipeline/run.py`'s CLI entrypoint is a one-shot process
+   with no sender identity across invocations, so there's no streak to
+   track there.
 
 ## Output format for summaries (fixed structure)
 
@@ -169,6 +240,9 @@ What it says: [3–4 short sentences, each one idea, plain words, no unexpanded 
 By when: [date, or "No action needed."]
 [amount involved, if any]
 [If the letter shows an enquiry phone number: "Questions? Call [agency] at [number]."]
+Note: [Always present — an automated-summary disclaimer, e.g. "This is an
+automated summary — for anything important, please check the original
+letter or contact [agency] directly."]
 ```
 
 Action-needed leads the summary, before the explanation — that's usually
