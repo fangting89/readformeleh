@@ -21,7 +21,7 @@ from pipeline.classify import classify_letter
 from pipeline.summarize import summarize_letter_checked, translate_summary
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("letter_kaki")
+logger = logging.getLogger("read_leh")
 
 app = FastAPI()
 

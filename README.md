@@ -1,4 +1,4 @@
-# letter-kaki
+# read-leh
 
 A WhatsApp-native bot that summarizes official government letters (CPF,
 IRAS, HDB, town council) into plain-language English/Mandarin, for
