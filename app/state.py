@@ -14,9 +14,24 @@ class LanguageCache:
         self._entries: dict[str, tuple[str, float]] = {}
 
     def set(self, sender: str, summary: str) -> None:
+        """Caches a summary for a sender, resetting its TTL.
+
+        Args:
+            sender: The sender's identifier (e.g. WhatsApp number).
+            summary: The summary text to cache.
+        """
         self._entries[sender] = (summary, time.monotonic() + self._ttl)
 
     def get(self, sender: str) -> str | None:
+        """Returns a sender's cached summary if it hasn't expired.
+
+        Args:
+            sender: The sender's identifier.
+
+        Returns:
+            The cached summary, or None if there isn't one or it's expired
+            (expired entries are also evicted from the cache here).
+        """
         entry = self._entries.get(sender)
         if entry is None:
             return None
@@ -39,9 +54,23 @@ class LanguagePreference:
         self._preferences: dict[str, str] = {}
 
     def set(self, sender: str, lang: str) -> None:
+        """Remembers a sender's language preference.
+
+        Args:
+            sender: The sender's identifier.
+            lang: The language code to remember, e.g. "en" or "zh".
+        """
         self._preferences[sender] = lang
 
     def get(self, sender: str) -> str | None:
+        """Returns a sender's remembered language preference.
+
+        Args:
+            sender: The sender's identifier.
+
+        Returns:
+            The remembered language code, or None if never set.
+        """
         return self._preferences.get(sender)
 
 
@@ -55,6 +84,18 @@ class RateLimiter:
         self._requests: dict[str, list[float]] = {}
 
     def allow(self, sender: str) -> bool:
+        """Checks whether a sender is still within their rate limit.
+
+        Records the request's timestamp as a side effect if allowed, so
+        the caller doesn't need a separate "record this request" step.
+
+        Args:
+            sender: The sender's identifier.
+
+        Returns:
+            True if the sender has made fewer than `max_requests` requests
+            in the last `window_seconds`, False otherwise.
+        """
         now = time.monotonic()
         cutoff = now - self._window
         timestamps = [t for t in self._requests.get(sender, []) if t > cutoff]
@@ -79,9 +120,17 @@ class ConsecutiveFailureCount:
         self._counts: dict[str, tuple[int, float]] = {}
 
     def record_failure(self, sender: str) -> int:
-        """Increments and returns the sender's current consecutive-failure
-        count, starting a fresh streak of 1 if the previous one has
-        expired or never existed."""
+        """Increments a sender's consecutive-failure count.
+
+        Starts a fresh streak of 1 if the previous one has expired or
+        never existed.
+
+        Args:
+            sender: The sender's identifier.
+
+        Returns:
+            The sender's current consecutive-failure count after this one.
+        """
         now = time.monotonic()
         count, expires_at = self._counts.get(sender, (0, 0.0))
         if now > expires_at:
@@ -91,9 +140,15 @@ class ConsecutiveFailureCount:
         return count
 
     def reset(self, sender: str) -> None:
-        """Clears a sender's streak — call whenever a photo comes back
-        legible (summarized successfully, or classified suspicious), not
-        just on an outright success."""
+        """Clears a sender's failure streak.
+
+        Call whenever a photo comes back legible (summarized
+        successfully, or classified suspicious), not just on an outright
+        success.
+
+        Args:
+            sender: The sender's identifier.
+        """
         self._counts.pop(sender, None)
 
 
@@ -107,6 +162,18 @@ class SeenMessages:
         self._seen: dict[str, float] = {}
 
     def seen_before(self, message_sid: str) -> bool:
+        """Checks whether a message SID has already been processed.
+
+        Records the SID as seen as a side effect, whether or not it was
+        already present.
+
+        Args:
+            message_sid: Twilio's unique ID for the inbound message.
+
+        Returns:
+            True if this SID was already seen (within its TTL), False if
+            this is the first time.
+        """
         now = time.monotonic()
         expires_at = self._seen.get(message_sid)
         if expires_at is not None and now <= expires_at:

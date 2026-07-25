@@ -64,5 +64,13 @@ ENGLISH_KEYWORDS = {"english", "en"}
 
 
 def bilingual_summary(english: str, chinese: str) -> str:
-    """Combines an English and Mandarin summary into one bilingual reply."""
+    """Combines an English and Mandarin summary into one bilingual reply.
+
+    Args:
+        english: The English summary text.
+        chinese: The Mandarin summary text.
+
+    Returns:
+        Both summaries joined with a divider, English first.
+    """
     return f"{english}\n\n———\n\n{chinese}"

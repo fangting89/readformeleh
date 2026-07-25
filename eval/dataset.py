@@ -19,20 +19,35 @@ ExpectedCategory = Literal["government", "bill_or_medical", "suspicious", "unrea
 
 @dataclass(frozen=True)
 class Specimen:
+    """One golden-set test letter and its known-correct expected fields.
+
+    Attributes:
+        name: Specimen ID, also used as the rendered sample's filename.
+        letter_text: The authored letter text to render into a photo.
+        render: Which visual degradation to apply (see RenderMode).
+        expected_category: The category `classify_letter` should return.
+        expected_image_quality: Whether figures should be safely
+            extractable. Independent of category. None means not checked
+            (suspicious/unreadable specimens, where category alone
+            already gates summarize).
+        expected_action_needed: Whether the letter requires action. Only
+            meaningful when expected_category is government/bill_or_medical.
+        expected_action_amount: Exact substring the summary should contain
+            if present. None means "not applicable" (not checked), not
+            "must be absent" - letters can legitimately mention other
+            figures (e.g. CPF balances) that aren't the action amount.
+        expected_deadline: Exact substring the summary should contain, same
+            "not applicable, not absent" semantics as expected_action_amount.
+        expected_agency_keywords: Substrings, any of which confirms the
+            summary named the right sender.
+    """
+
     name: str
     letter_text: str
     render: RenderMode
     expected_category: ExpectedCategory
-    # Independent of category: whether specific figures should be safely
-    # extractable. None means not checked (suspicious/unreadable specimens,
-    # where category alone already gates summarize).
     expected_image_quality: Literal["clear", "degraded"] | None = None
-    # Only meaningful when expected_category is government/bill_or_medical.
     expected_action_needed: bool | None = None
-    # Exact substrings the summary should contain if present in the letter.
-    # None means "not applicable" (not checked), not "must be absent":
-    # letters can legitimately mention other figures (e.g. CPF balances)
-    # that aren't the action-relevant amount/deadline.
     expected_action_amount: str | None = None
     expected_deadline: str | None = None
     expected_agency_keywords: tuple[str, ...] = field(default_factory=tuple)

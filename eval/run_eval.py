@@ -29,6 +29,7 @@ import json
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import TypedDict
 
 from eval.dataset import SPECIMENS, ExpectedCategory, Specimen
 from pipeline.classify import classify_letter
@@ -51,15 +52,30 @@ CATEGORIES: tuple[ExpectedCategory, ...] = (
 NO_ACTION_PHRASE = "no, nothing to do"
 
 
+class SummaryChecks(TypedDict):
+    """Per-run scoring result from `_score_summary`."""
+
+    action_needed_correct: bool | None
+    amount_correct: bool | None
+    deadline_correct: bool | None
+    agency_mentioned: bool | None
+    format_ok: bool
+    unexpected_amounts: list[str]
+
+
 def _run_classify_eval() -> dict:
     """Runs classify_letter CLASSIFY_REPEATS times per specimen.
 
-    Returns per-class precision/recall/F1 (computed over every repeat as
-    an independent trial), overall accuracy, a per-specimen consistency
-    (flip rate) figure, and, separately, how often image_quality matched
-    expectations for the specimens where that's checked (the gate that
-    prevents summarize from being called on a photo that's readable
-    enough to categorize but not to safely extract figures from).
+    Returns:
+        A dict with per-class precision/recall/F1 (computed over every
+        repeat as an independent trial), overall accuracy, a per-specimen
+        consistency ("flip rate") figure, and, separately, how often
+        image_quality matched expectations for the specimens where that's
+        checked (the gate that prevents summarize from being called on a
+        photo that's readable enough to categorize but not to safely
+        extract figures from). Shape isn't fixed enough for a TypedDict -
+        `per_specimen`/`per_class` are keyed dynamically by specimen/
+        category name.
     """
     confusion: Counter[tuple[str, str]] = Counter()  # (expected, predicted)
     per_specimen: dict[str, dict] = {}
@@ -138,19 +154,38 @@ def _run_classify_eval() -> dict:
 
 
 def _round(x: float | None) -> float | None:
+    """Rounds to 3dp for readable JSON output, passing None through unchanged."""
     return round(x, 3) if x is not None else None
 
 
-def _score_summary(summary: str, specimen: Specimen) -> dict:
-    lower = summary.lower()
-    checks: dict[str, bool | None] = {}
+def _score_summary(summary: str, specimen: Specimen) -> SummaryChecks:
+    """Scores one summarize_letter output against its specimen's known-correct fields.
 
-    if specimen.expected_action_needed is None:
-        checks["action_needed_correct"] = None
-    elif specimen.expected_action_needed:
-        checks["action_needed_correct"] = NO_ACTION_PHRASE not in lower
-    else:
-        checks["action_needed_correct"] = NO_ACTION_PHRASE in lower
+    Args:
+        summary: The generated summary text to score.
+        specimen: The golden-set specimen with known expected fields.
+
+    Returns:
+        Per-check pass/fail results. A check is None where the specimen
+        doesn't define an expected value for it (not applicable, not a
+        failure).
+    """
+    lower = summary.lower()
+    checks: SummaryChecks = {
+        "action_needed_correct": None,
+        "amount_correct": None,
+        "deadline_correct": None,
+        "agency_mentioned": None,
+        "format_ok": False,
+        "unexpected_amounts": [],
+    }
+
+    if specimen.expected_action_needed is not None:
+        checks["action_needed_correct"] = (
+            NO_ACTION_PHRASE not in lower
+            if specimen.expected_action_needed
+            else NO_ACTION_PHRASE in lower
+        )
 
     checks["amount_correct"] = (
         specimen.expected_action_amount in summary
@@ -186,12 +221,20 @@ def _score_summary(summary: str, specimen: Specimen) -> dict:
 
 
 def _run_summarize_eval() -> dict:
-    """Only scores specimens the real app would actually pass to
+    """Runs summarize_letter SUMMARIZE_REPEATS times per scorable specimen.
+
+    Only scores specimens the real app would actually pass to
     summarize_letter: expected_category in (government, bill_or_medical)
     AND expected_image_quality != "degraded". A degraded-quality specimen
     is intentionally excluded here even though its category is
     summarizable, matching app/main.py's gate (see eval/dataset.py's note
-    on bad_quality_photo for why that gate exists)."""
+    on bad_quality_photo for why that gate exists).
+
+    Returns:
+        A dict with the count of specimens scored, runs per specimen,
+        aggregate pass rates per check (see SummaryChecks), and the raw
+        per-specimen results.
+    """
     per_specimen: dict[str, dict] = {}
     scorable = [
         s
@@ -233,6 +276,7 @@ def _run_summarize_eval() -> dict:
 
 
 def main() -> None:
+    """Runs both classify and summarize evals, prints a report, and saves it to JSON."""
     print(
         f"Running classify eval ({CLASSIFY_REPEATS} repeats x {len(SPECIMENS)} specimens)..."
     )

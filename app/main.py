@@ -38,8 +38,16 @@ _ESCALATION_THRESHOLD = 2
 
 
 def _hash_sender(sender: str) -> str:
-    """Short, non-reversible sender identifier for logs — the phone
-    number itself is PII and is never logged raw."""
+    """Hashes a sender's phone number into a short, non-reversible ID for logs.
+
+    The phone number itself is PII and is never logged raw.
+
+    Args:
+        sender: The sender's raw identifier (e.g. "whatsapp:+65...").
+
+    Returns:
+        A 12-character hex digest safe to include in log lines.
+    """
     return hashlib.sha256(sender.encode()).hexdigest()[:12]
 
 
@@ -50,10 +58,16 @@ def _twiml(body: str) -> Response:
 
 
 def _unreadable_reply(sender: str) -> str:
-    """Records a failed (unreadable or degraded) attempt for the sender and
-    returns the appropriate retry message — the baseline tip on the first
-    failure, or the escalated in-person-help suggestion once
-    _ESCALATION_THRESHOLD consecutive failures have piled up."""
+    """Records a failed (unreadable/degraded) attempt and picks the retry message.
+
+    Args:
+        sender: The sender's identifier.
+
+    Returns:
+        The baseline retry tip on the first failure, or the escalated
+        in-person-help suggestion once `_ESCALATION_THRESHOLD` consecutive
+        failures have piled up.
+    """
     count = _consecutive_failures.record_failure(sender)
     if count >= _ESCALATION_THRESHOLD:
         return messages.UNREADABLE_RETRY_ESCALATED
@@ -69,7 +83,19 @@ async def health() -> dict[str, str]:
 async def whatsapp_webhook(
     request: Request, background_tasks: BackgroundTasks
 ) -> Response:
-    """Twilio WhatsApp webhook: receives a letter photo, replies with a summary."""
+    """Twilio WhatsApp webhook: receives a letter photo, replies with a summary.
+
+    Args:
+        request: The inbound Twilio webhook request (form-encoded).
+        background_tasks: FastAPI's mechanism for running the actual
+            classify+summarize pipeline after this response is sent.
+
+    Returns:
+        A TwiML response - either an immediate ack (photo received, real
+        reply follows asynchronously), a synchronous reply (usage
+        instructions, rate limit, language toggle), or a 403 if the
+        request's Twilio signature doesn't verify.
+    """
     form = await request.form()
     params = dict(form)
     signature = request.headers.get("X-Twilio-Signature", "")
@@ -118,11 +144,17 @@ async def whatsapp_webhook(
 
 
 def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
-    """Runs off the request/response cycle via FastAPI's BackgroundTasks.
+    """Downloads, classifies, and (if safe) summarizes a letter photo, then replies.
 
+    Runs off the request/response cycle via FastAPI's BackgroundTasks.
     Defined as a plain (non-async) function so Starlette runs it in a
     worker thread automatically, rather than blocking the event loop for
     the several seconds a classify+summarize round trip takes.
+
+    Args:
+        sender: The recipient to reply to (Twilio's `From` value).
+        media_url: The photo's URL, as given by Twilio's webhook payload.
+        sender_hash: Pre-computed `_hash_sender(sender)`, for logging.
     """
     try:
         image_bytes = download_media(media_url)
