@@ -11,6 +11,7 @@ dependencies = [
     "pillow>=10.4",
     "requests>=2.32",
     "python-multipart>=0.0.9",
+    "streamlit>=1.60.0",
 ]
 
 [dependency-groups]

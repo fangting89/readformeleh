@@ -1,0 +1,15 @@
+# Theme deliberately distinct from ask-leh's official-government look:
+# ReadLeh's own brand identity (docs/DESIGN.md) is warm and casual, "a
+# small favour between friends," not an institutional channel, and the
+# product itself lives entirely inside WhatsApp. The palette nods to that
+# (a WhatsApp-adjacent teal-green, softer rounded corners) without
+# literally copying WhatsApp's own UI or trademarked exact color.
+
+[theme]
+base = "light"
+primaryColor = "#3D9970"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F7F3"
+textColor = "#1A1A1A"
+baseRadius = "large"
+buttonRadius = "large"
