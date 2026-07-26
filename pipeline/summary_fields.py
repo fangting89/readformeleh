@@ -5,7 +5,7 @@ scoring, so the amount/date-extraction regex used to reconcile two independent
 reads and the regex used to score against a known-correct golden value don't
 drift into two separate implementations of the same thing.
 
-Pure string logic only — no API calls, no Anthropic import — so everything
+Pure string logic only: no API calls, no Anthropic import, so everything
 here is unit-testable without mocking anything.
 """
 

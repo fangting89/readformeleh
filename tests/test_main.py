@@ -35,7 +35,7 @@ def test_webhook_no_media_returns_usage_instructions(mock_verify):
     )
     assert response.status_code == 200
     assert "photo" in response.text.lower()
-    assert "信件" in response.text  # bilingual — Chinese half present too
+    assert "信件" in response.text  # bilingual: Chinese half present too
 
 
 @patch("app.main.translate_summary", return_value="中文摘要")

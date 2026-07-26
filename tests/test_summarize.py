@@ -1,7 +1,7 @@
 """Tests for pipeline/summarize.py's summarize_letter_checked wiring.
 
 Only the wiring is tested here (calls summarize_letter twice, reconciles
-the results) — reconcile_summaries' own logic is tests/test_summary_fields.py's
+the results), reconcile_summaries' own logic is tests/test_summary_fields.py's
 job, so this stays a minimal, mocked test rather than re-testing that logic."""
 
 from unittest.mock import patch
@@ -9,12 +9,12 @@ from unittest.mock import patch
 from pipeline.summarize import summarize_letter_checked
 from pipeline.summary_fields import reconcile_summaries
 
-SUMMARY_A = """**Action needed:** Yes — pay $89.50 by 25 Jul 2026.
+SUMMARY_A = """**Action needed:** Yes, pay $89.50 by 25 Jul 2026.
 **By when:** 25 Jul 2026
 $89.50
 **Note:** automated summary."""
 
-SUMMARY_B = """**Action needed:** Yes — pay $95.00 by 25 Jul 2026.
+SUMMARY_B = """**Action needed:** Yes, pay $95.00 by 25 Jul 2026.
 **By when:** 25 Jul 2026
 $95.00
 **Note:** automated summary."""

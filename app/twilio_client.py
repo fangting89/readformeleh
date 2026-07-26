@@ -12,7 +12,7 @@ def verify_signature(url: str, params: dict[str, str], signature: str) -> bool:
     """Verifies a Twilio webhook request actually came from Twilio.
 
     `url` must be the exact public URL Twilio called (the https ngrok URL
-    configured in the console) — if running behind a proxy that rewrites
+    configured in the console). If running behind a proxy that rewrites
     scheme/host, reconstruct the original URL rather than using what
     uvicorn sees locally, or the signature will never match.
 

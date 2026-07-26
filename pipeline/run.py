@@ -37,7 +37,7 @@ def main() -> None:
     # image_quality is "clear" here, so the extra independent read in
     # summarize_letter_checked is warranted (see its docstring). Always
     # computed in English first, then translated, matching app/main.py's
-    # webhook path — this is the source of truth for both languages.
+    # webhook path: this is the source of truth for both languages.
     summary_en = summarize_letter_checked(args.photo)
     print(translate_summary(summary_en, "zh") if args.lang == "zh" else summary_en)
 

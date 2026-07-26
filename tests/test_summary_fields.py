@@ -1,6 +1,6 @@
 """Tests for pipeline/summary_fields.py's parsing/reconciliation logic.
 
-Pure string logic, no mocking needed — the whole point of factoring this
+Pure string logic, no mocking needed. That's the whole point of factoring this
 out of pipeline/summarize.py's self-consistency guard."""
 
 from pipeline.summary_fields import (
@@ -12,11 +12,11 @@ from pipeline.summary_fields import (
 )
 
 SUMMARY = """📬 This letter is from Ang Mo Kio Town Council.
-**Action needed:** Yes — pay $89.50 by 25 Jul 2026.
+**Action needed:** Yes, pay $89.50 by 25 Jul 2026.
 **What it says:** Your conservancy charges are unpaid. Please settle by the due date.
 **By when:** 25 Jul 2026
 $89.50
-**Note:** This is an automated summary — for anything important, please check the \
+**Note:** This is an automated summary. For anything important, please check the \
 original letter or contact Ang Mo Kio Town Council directly."""
 
 

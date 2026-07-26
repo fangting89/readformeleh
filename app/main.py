@@ -197,13 +197,13 @@ def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
                 send_message(sender, _unreadable_reply(sender))
                 return
 
-            # Always generate the English summary as the base — it's the
+            # Always generate the English summary as the base: it's the
             # letter's original language, so a direct extraction is more
             # faithful than translating a translation. Cache it so later
             # toggles/preferences can re-render from a consistent source.
             # image_quality is "clear" here (the "degraded" branch above
             # already returned), so summarize_letter_checked's extra
-            # independent read is warranted — see its docstring and
+            # independent read is warranted, see its docstring and
             # docs/DESIGN.md for the hallucination case it catches.
             summary_en = summarize_letter_checked(image_path)
             _language_cache.set(sender, summary_en)
@@ -215,7 +215,7 @@ def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
             elif preference == "zh":
                 reply = translate_summary(summary_en, "zh")
             else:
-                # No preference known yet — bilingual by default, since a
+                # No preference known yet: bilingual by default, since a
                 # sender who can't read English may not understand an
                 # English-only instruction telling them how to ask for
                 # Mandarin.

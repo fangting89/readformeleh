@@ -12,14 +12,14 @@ _LANGUAGE_NAMES = {"en": "English", "zh": "Mandarin Chinese"}
 
 _STRUCTURES = {
     "en": """📬 This letter is from [agency].
-**Action needed:** [Yes — one short line on what to do, or "No, nothing to do!"]
+**Action needed:** [Yes: one short line on what to do, or "No, nothing to do!"]
 **What it says:** [3-4 short sentences, each one idea, plain words, no unexpanded acronyms]
 **By when:** [date, or "No action needed."]
 [amount involved, if any]
 [ONLY if an actual phone number is visible in the letter photo: "Questions? \
 Call [agency] at [the exact number shown]." Omit this line completely if no \
-phone number is visible — do not invent a generic "contact us" line.]
-**Note:** This is an automated summary — for anything important, please check the \
+phone number is visible, do not invent a generic "contact us" line.]
+**Note:** This is an automated summary. For anything important, please check the \
 original letter or contact [agency] directly.""",
     "zh": """📬 这封信来自[机构]。
 **需要您做什么：** [是——用一句话简单说明要做的事，或写"不需要，什么都不用做！"]
@@ -40,11 +40,11 @@ target language, not left in English):
 {structure}
 
 Rules:
-- Lead with whether any action is needed — that's usually the reader's first worry,
+- Lead with whether any action is needed, that's usually the reader's first worry,
   resolve it immediately rather than making them read the whole thing first.
 - Each sentence covers exactly one idea. Prefer several short sentences over one
   sentence with multiple clauses, even if every individual word is simple.
-- Use the same word for the same concept throughout — don't alternate between
+- Use the same word for the same concept throughout, don't alternate between
   e.g. "agency"/"department"/"office" for the same sender.
 - Short lines, one idea per line, key action bolded, no walls of text.
 - Simple everyday {language_name}, appropriate for an elderly reader.
@@ -125,16 +125,16 @@ def summarize_letter_checked(image_path: Path) -> str:
 
     Any By-when date or action-amount that disagrees between the two reads
     is replaced with the same hedge sentence `summarize_letter` already uses
-    for a field it can't read at all — a disagreement between two
+    for a field it can't read at all: a disagreement between two
     independent reads is exactly as untrustworthy as an admitted guess.
 
-    English only — this backs the always-English base summary computed
+    English only: this backs the always-English base summary computed
     before translation (see app/main.py, pipeline/run.py); doubling the
     Mandarin call too would double cost again for no extra information,
     since both reads work from the same photo either way.
 
     Only call this when classify_letter's image_quality == "clear" (see
-    CLAUDE.md invariant 5) — this is an addition to that invariant, not a
+    CLAUDE.md invariant 5). This is an addition to that invariant, not a
     replacement: a degraded photo still never reaches summarize_letter at
     all. Costs one extra vision call versus summarize_letter alone (~0.5-1
     cent at current Haiku pricing).
@@ -153,14 +153,14 @@ def summarize_letter_checked(image_path: Path) -> str:
 
 _TRANSLATE_SYSTEM_PROMPT = """Re-render the given letter summary in {language_name}, \
 keeping exactly the same structure, section labels (translated, not left in English), \
-line breaks, and bolding. Translate the content faithfully — do not add, drop, or \
+line breaks, and bolding. Translate the content faithfully. Do not add, drop, or \
 guess at any detail. Output only the re-rendered summary, nothing else."""
 
 
 def translate_summary(summary: str, target_lang: Language) -> str:
     """Re-renders an already-generated summary in another language.
 
-    Text-only — no image is re-sent. Used for the WhatsApp language-toggle
+    Text-only: no image is re-sent. Used for the WhatsApp language-toggle
     reply, where the original photo is no longer available.
 
     Args:

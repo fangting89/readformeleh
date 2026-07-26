@@ -45,7 +45,7 @@ class LanguageCache:
 class LanguagePreference:
     """Remembers a sender's language once they've explicitly signalled
     it (replying "中文"/"English" etc.), so later summaries can be
-    single-language instead of bilingual. No TTL — unlike the last-summary
+    single-language instead of bilingual. No TTL, unlike the last-summary
     cache, a person's language doesn't go stale after 10 minutes. This is
     a deliberate, documented exception to the stateless design, same as
     LanguageCache; it doesn't persist across process restarts."""
@@ -75,7 +75,7 @@ class LanguagePreference:
 
 
 class RateLimiter:
-    """Bounds requests per sender in a rolling time window — the cost
+    """Bounds requests per sender in a rolling time window: the cost
     guardrail against spam or a stuck retry loop."""
 
     def __init__(self, max_requests: int = 5, window_seconds: float = 600):
@@ -112,7 +112,7 @@ class ConsecutiveFailureCount:
     string of failed photos can escalate the retry message beyond a
     generic lighting tip to suggesting in-person help (see
     docs/DESIGN.md's evidence base on staff time/stigma). TTL-bounded like
-    the other stores — a failure streak from an old session shouldn't
+    the other stores: a failure streak from an old session shouldn't
     silently count toward a new one."""
 
     def __init__(self, ttl_seconds: float = 1800):

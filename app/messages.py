@@ -15,7 +15,7 @@ USAGE_INSTRUCTIONS = (
 )
 
 SUSPICIOUS_WARNING = (
-    "⚠️ This letter looks suspicious — it has signs of being a scam, so I "
+    "⚠️ This letter looks suspicious, it has signs of being a scam, so I "
     "won't summarize it (that could help the scammer). If you're not sure, "
     "call the ScamShield helpline at 1799 to check before doing anything "
     "it asks for.\n"
@@ -35,20 +35,20 @@ UNREADABLE_RETRY = (
 UNREADABLE_RETRY_ESCALATED = (
     "This is the second photo in a row I couldn't read clearly. If it's "
     "hard to get a clear shot, it might help to ask a family member to "
-    "try, or bring the letter to your nearest Active Ageing Centre — "
+    "try, or bring the letter to your nearest Active Ageing Centre, "
     "staff there can help you read it in person.\n"
     "这已经是连续第二张不够清楚的照片了。如果拍照有困难，可以请家人帮忙，"
     "或者把信件带到附近的乐龄活动中心，工作人员可以当面帮您看信。"
 )
 
 RATE_LIMITED = (
-    "You've sent quite a few letters recently — please wait a bit before "
+    "You've sent quite a few letters recently, please wait a bit before "
     "sending another.\n"
     "您最近发送了不少信件，请稍等一会儿再发送新的。"
 )
 
 NO_CACHED_SUMMARY = (
-    "I don't have a recent summary to translate — please send the letter "
+    "I don't have a recent summary to translate, please send the letter "
     "photo again.\n"
     "我没有最近的摘要可以翻译，请重新发送信件照片。"
 )
@@ -73,4 +73,4 @@ def bilingual_summary(english: str, chinese: str) -> str:
     Returns:
         Both summaries joined with a divider, English first.
     """
-    return f"{english}\n\n———\n\n{chinese}"
+    return f"{english}\n\n---\n\n{chinese}"

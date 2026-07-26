@@ -22,5 +22,5 @@ def require_env(name: str) -> str:
     """
     value = os.environ.get(name)
     if not value:
-        raise RuntimeError(f"{name} is not set — check your .env file.")
+        raise RuntimeError(f"{name} is not set, check your .env file.")
     return value

@@ -87,7 +87,7 @@ even though you were able to determine a category.
 
 If category is suspicious, list the specific red flags you observed. Otherwise return an \
 empty list. Describe each red flag generically (e.g. "asks the reader to confirm their \
-NRIC number") — never quote the actual NRIC number, address, amount, or other personal \
+NRIC number"). Never quote the actual NRIC number, address, amount, or other personal \
 detail from the letter itself."""
 
 
