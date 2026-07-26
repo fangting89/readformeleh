@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReadLeh — Interactive Walkthrough</title>
+<style>
+  :root {
+    --teal: #3D9970; --teal-dark: #2B7A56; --ink: #0E0E0E; --ink-soft: #55585c;
+    --paper: #FFFFFF; --tint: #F0F7F3; --tint-warm: #FDF6E9; --line: #E2EAE6;
+    --good: #1E7A4C; --good-tint: #EAF7EF; --bad: #C21F28; --bad-tint: #FDECEC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --teal: #4FCE95; --teal-dark: #6FE0AC; --ink: #F2F2F2; --ink-soft: #B8B8B8;
+      --paper: #16191A; --tint: #1C2422; --tint-warm: #262019; --line: #2C3532;
+      --good: #4ADE80; --good-tint: #123321; --bad: #FF6B6B; --bad-tint: #331616;
+    }
+  }
+  :root[data-theme="dark"] {
+    --teal: #4FCE95; --teal-dark: #6FE0AC; --ink: #F2F2F2; --ink-soft: #B8B8B8;
+    --paper: #16191A; --tint: #1C2422; --tint-warm: #262019; --line: #2C3532;
+    --good: #4ADE80; --good-tint: #123321; --bad: #FF6B6B; --bad-tint: #331616;
+  }
+  :root[data-theme="light"] {
+    --teal: #3D9970; --teal-dark: #2B7A56; --ink: #0E0E0E; --ink-soft: #55585c;
+    --paper: #FFFFFF; --tint: #F0F7F3; --tint-warm: #FDF6E9; --line: #E2EAE6;
+    --good: #1E7A4C; --good-tint: #EAF7EF; --bad: #C21F28; --bad-tint: #FDECEC;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  .eyebrow {
+    display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--teal-dark); background: var(--tint); padding: 0.3rem 0.7rem; border-radius: 999px; margin-bottom: 1rem;
+  }
+  h1 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); font-weight: 800; margin: 0 0 0.7rem; text-wrap: balance; letter-spacing: -0.01em; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin: 0 0 0.8rem; }
+  p.lede { font-size: 1.02rem; color: var(--ink-soft); max-width: 68ch; margin: 0 0 2.2rem; }
+  p.lede a { color: var(--teal-dark); text-decoration: none; border-bottom: 1px solid currentColor; }
+
+  section.block { margin: 2.6rem 0; }
+
+  .scenario-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.6rem; }
+  .scenario-tab {
+    font: inherit; font-weight: 700; font-size: 0.88rem; padding: 0.55rem 1rem; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); cursor: pointer;
+  }
+  .scenario-tab.on { background: var(--teal); border-color: var(--teal); color: white; }
+  .scenario-tab:hover:not(.on) { border-color: var(--teal); color: var(--teal-dark); }
+
+  .question-card {
+    background: var(--tint); border-radius: 16px; padding: 0.8rem 1.1rem; margin-bottom: 1.8rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .question-card .thumb {
+    width: 36px; height: 36px; border-radius: 9px; background: var(--teal); color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .question-card .name { font-weight: 700; font-size: 0.96rem; }
+
+  .pipeline-wrap { position: relative; overflow-x: auto; padding: 2.6rem 0.5rem 1rem; }
+  .track { position: relative; display: flex; justify-content: space-between; min-width: 460px; gap: 0.5rem; }
+  .track-line {
+    position: absolute; top: 50%; left: 2%; right: 2%; height: 3px;
+    background: var(--line); transform: translateY(-50%); z-index: 0;
+  }
+  .node {
+    position: relative; z-index: 1; flex: 1 1 0; display: flex; flex-direction: column; align-items: center;
+    gap: 0.5rem; cursor: pointer; background: none; border: none; font: inherit; padding: 0;
+  }
+  .node .circle {
+    width: 44px; height: 44px; border-radius: 14px; background: var(--paper); border: 3px solid var(--line);
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem;
+    color: var(--ink-soft); transition: border-color 0.25s, background 0.25s, color 0.25s, transform 0.25s;
+  }
+  .node .name { font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); transition: color 0.25s; text-align: center; }
+  .node.done .circle { border-color: var(--teal); background: var(--tint-warm); color: var(--teal-dark); }
+  .node.done .name { color: var(--ink); }
+  .node.current .circle { border-color: var(--teal); background: var(--teal); color: white; transform: scale(1.12); }
+  .node.current .name { color: var(--teal-dark); }
+  .node.upcoming .circle { opacity: 0.7; }
+  .node.upcoming .name { opacity: 0.7; }
+  .node.skipped .circle { opacity: 0.3; border-style: dashed; }
+  .node.skipped .name { opacity: 0.3; }
+  .node.blocked .circle { border-color: var(--bad); background: var(--bad); color: white; }
+  .node.blocked .name { color: var(--bad); }
+
+  .token {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--teal);
+    box-shadow: 0 0 0 4px var(--tint-warm); z-index: 2; transition: left 0.5s cubic-bezier(.4,0,.2,1), top 0.5s;
+    transform: translate(-50%, -50%); pointer-events: none;
+  }
+  .token::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--teal);
+    opacity: 0.5; animation: pulse 1.4s ease-out infinite;
+  }
+  @keyframes pulse { 0% { transform: scale(0.6); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
+
+  .detail { background: var(--tint); border-radius: 16px; padding: 1.3rem 1.5rem; margin-top: 1.2rem; min-height: 140px; }
+  .detail .step-title { font-weight: 800; font-size: 1.05rem; margin-bottom: 0.5rem; }
+  .detail .step-body { color: var(--ink-soft); font-size: 0.96rem; }
+  .detail code { background: var(--paper); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.86em; }
+  .verdict {
+    display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.83rem;
+    padding: 0.28rem 0.7rem; border-radius: 999px; margin-top: 0.6rem;
+  }
+  .verdict.pass { background: var(--good-tint); color: var(--good); }
+  .verdict.block { background: var(--bad-tint); color: var(--bad); }
+
+  .bubble {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px;
+    padding: 0.85rem 1.05rem; margin-top: 0.7rem; font-size: 0.86rem; white-space: pre-wrap;
+  }
+  .bubble + .bubble { margin-top: 0.6rem; }
+  .redflags { list-style: none; padding: 0; margin: 0.6rem 0 0; }
+  .redflags li { background: var(--bad-tint); color: var(--bad); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.35rem; font-size: 0.85rem; }
+
+  .navrow { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.3rem; }
+  .navbtn {
+    font: inherit; font-weight: 700; font-size: 0.85rem; background: var(--paper); border: 1px solid var(--line);
+    color: var(--ink); padding: 0.55rem 1.1rem; border-radius: 999px; cursor: pointer;
+  }
+  .navbtn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal-dark); }
+  .navbtn:disabled { opacity: 0.35; cursor: default; }
+  .step-count { font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.7rem; }
+  .metric { background: var(--tint); border-radius: 16px; padding: 0.9rem 0.7rem; text-align: center; }
+  .metric .n { font-size: 1.4rem; font-weight: 800; color: var(--teal-dark); }
+  .metric .lbl { font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.2rem; }
+
+  ul.points { list-style: none; padding: 0; margin: 1rem 0 0; }
+  ul.points li { position: relative; padding: 0.4rem 0 0.4rem 22px; font-size: 0.95rem; color: var(--ink-soft); }
+  ul.points li::before { content: "→"; position: absolute; left: 0; top: 0.4rem; color: var(--teal-dark); font-weight: 700; }
+
+  footer {
+    margin-top: 3rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: 0.85rem;
+    color: var(--ink-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem;
+  }
+  footer a { color: var(--teal-dark); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <span class="eyebrow">ReadLeh</span>
+  <h1>Click through a real letter photo, step by step</h1>
+  <p class="lede">
+    ReadLeh explains official letters for Singaporean seniors in plain language, with a
+    scam-detection gate that withholds a summary rather than ever explaining a scam. Pick a
+    scenario, then use Next/Prev or click a node directly. Try the live demo at
+    <a href="https://read-leh.streamlit.app" target="_blank" rel="noopener">read-leh.streamlit.app</a>.
+  </p>
+
+  <section class="block">
+    <div class="scenario-tabs" id="scenarioTabs"></div>
+    <div class="question-card" id="questionCard"></div>
+
+    <div class="pipeline-wrap">
+      <div class="track" id="track">
+        <div class="track-line"></div>
+        <div class="token" id="token"></div>
+      </div>
+    </div>
+
+    <div class="detail" id="detail"></div>
+
+    <div class="navrow">
+      <button class="navbtn" id="prevBtn">&larr; Prev</button>
+      <span class="step-count" id="stepCount"></span>
+      <button class="navbtn" id="nextBtn">Next &rarr;</button>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Evaluation results</h2>
+    <div class="metrics">
+      <div class="metric"><div class="n">1.0</div><div class="lbl">classify accuracy</div></div>
+      <div class="metric"><div class="n">1.0</div><div class="lbl">image_quality gate accuracy</div></div>
+      <div class="metric"><div class="n">3/3</div><div class="lbl">prompt-injection caught</div></div>
+      <div class="metric"><div class="n">51</div><div class="lbl">unit tests passing</div></div>
+    </div>
+    <p style="color: var(--ink-soft); font-size: 0.95rem; margin-top: 1rem;">
+      The double-read guard, verified honestly: 5 repeats each of raw vs. guarded summarization on
+      real specimens. The two reads agreed every time in this run, so the guard had nothing to
+      hedge, the expected, good outcome, not a failure to demonstrate. It reduces the risk; it
+      doesn't claim to make it zero.
+    </p>
+  </section>
+
+  <footer>
+    <span>ReadLeh &middot; personal portfolio project, WhatsApp letter-explainer for seniors</span>
+    <span>
+      <a href="https://github.com/fangting89/read-leh" target="_blank" rel="noopener">Source</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://read-leh.streamlit.app" target="_blank" rel="noopener">Live demo</a>
+    </span>
+  </footer>
+</div>
+
+<script>
+  const NODES = [
+    { key: 'classify', label: 'Classify' },
+    { key: 'gate', label: 'Safety gate' },
+    { key: 'guard', label: 'Double-read guard' },
+    { key: 'reply', label: 'Reply' },
+  ];
+
+  const SCENARIOS = {
+    genuine: {
+      label: 'A genuine letter',
+      thumb: '📬',
+      name: 'CPF Statement (genuine)',
+      steps: ['classify', 'gate', 'guard', 'reply'],
+      detail: {
+        classify: {
+          title: 'Classify',
+          body: 'A single vision call at <code>temperature=0</code> returns three independent fields. Real result: <code>category: government</code>, <code>image_quality: clear</code>, <code>red_flags: []</code>.',
+        },
+        gate: {
+          title: 'Safety gate',
+          body: 'Not <code>suspicious</code>, not <code>unreadable</code>, and <code>image_quality</code> is <code>clear</code>. All three checks are code branches, not prompt suggestions.',
+          verdict: { cls: 'pass', text: '✓ proceeds to the double-read guard' },
+        },
+        guard: {
+          title: 'Double-read guard',
+          body: 'Because the photo is clear, <code>summarize_letter_checked</code> reads it twice, independently, and compares the two reads\' date and dollar-amount fields before trusting either. In this run, the two reads agreed, nothing needed hedging.',
+        },
+        reply: {
+          title: 'Reply',
+          body: 'Sent in both languages on first contact (a sender who can\'t read English well may not understand an English-only instruction on how to ask for Mandarin):',
+          bubbles: [
+            '📬 This letter is from the Central Provident Fund Board.\n\n**Action needed:** No, nothing to do!\n\n**What it says:** This statement shows your CPF contributions for January to June 2026. You received $9,240.00 in contributions during this period.',
+            '📬 这封信来自中央公积金局。\n\n**需要采取的行动：** 无，无需采取任何行动！\n\n**信的内容：** 本对账单显示您在2026年1月至6月期间的公积金缴款。您在此期间获得了9,240.00美元的缴款。',
+          ],
+        },
+      },
+    },
+    scam: {
+      label: 'A scam letter',
+      thumb: '⚠️',
+      name: 'Scam Letter (suspicious test)',
+      steps: ['classify', 'gate', 'reply'],
+      blockedAt: 'gate',
+      detail: {
+        classify: {
+          title: 'Classify',
+          body: 'Real result: <code>category: suspicious</code>, <code>image_quality: clear</code>, with 7 generically-described red flags (never quoting the scam\'s actual NRIC/amount/PayNow number back, which is what keeps them safe to log).',
+        },
+        gate: {
+          title: 'Safety gate',
+          body: '<code>category == "suspicious"</code> is a hard stop, coded as a return statement, not a prompt instruction the model could talk its way past. <code>summarize_letter</code> is never called.',
+          verdict: { cls: 'block', text: '✗ blocked · refer to ScamShield 1799' },
+          redflags: [
+            'Demands payment within an unrealistic timeframe (2 hours)',
+            'Requests sensitive personal information (full NRIC, bank account)',
+            'Instructs payment to an unofficial PayNow channel',
+            'Pressure tactic threatening warrant issuance',
+          ],
+        },
+        reply: {
+          title: 'Reply',
+          body: 'A gentle warning naming the red flags, plus the ScamShield helpline, sent immediately. No summary of the scam\'s content is ever generated, a plain-language summary of a scam letter would help the scammer.',
+          bubbles: ['⚠️ This letter looks suspicious, it has signs of being a scam, so I won\'t summarize it (that could help the scammer). If you\'re not sure, call the ScamShield helpline at 1799.'],
+        },
+      },
+    },
+    degraded: {
+      label: 'A degraded photo',
+      thumb: '📷',
+      name: 'Bad Quality Photo (degraded test)',
+      steps: ['classify', 'gate', 'reply'],
+      blockedAt: 'gate',
+      detail: {
+        classify: {
+          title: 'Classify',
+          body: 'Real result: <code>category: government</code>, <code>image_quality: degraded</code>. The model can confidently tell what <em>kind</em> of letter this is, but that\'s a different bar from being able to safely read out its exact figures.',
+        },
+        gate: {
+          title: 'Safety gate',
+          body: 'Even though the category isn\'t <code>suspicious</code> or <code>unreadable</code>, <code>image_quality == "degraded"</code> alone is enough to block summarization. Confidently identifying a letter\'s category and safely extracting its exact figures are different bars: a photo can be legible enough to categorize while still being too degraded to trust for specific dates or dollar amounts.',
+          verdict: { cls: 'block', text: '✗ blocked · category alone isn\'t enough' },
+        },
+        reply: {
+          title: 'Reply',
+          body: 'A retry tip, not a warning, this isn\'t a scam, just a photo too degraded to trust for specific figures.',
+          bubbles: ['I couldn\'t read this photo clearly enough to summarize it. Could you try again with more light, holding the letter flat and the camera steady?'],
+        },
+      },
+    },
+  };
+
+  let state = { scenario: 'genuine', stepIndex: 0 };
+
+  function activeSteps() {
+    return SCENARIOS[state.scenario].steps;
+  }
+  function detailFor(nodeKey) {
+    return SCENARIOS[state.scenario].detail[nodeKey];
+  }
+  function blockedNode() {
+    return SCENARIOS[state.scenario].blockedAt || null;
+  }
+
+  const tabsEl = document.getElementById('scenarioTabs');
+  Object.entries(SCENARIOS).forEach(([key, s]) => {
+    const btn = document.createElement('button');
+    btn.className = 'scenario-tab' + (key === state.scenario ? ' on' : '');
+    btn.textContent = s.label;
+    btn.dataset.key = key;
+    btn.addEventListener('click', () => {
+      state.scenario = key;
+      state.stepIndex = 0;
+      render();
+    });
+    tabsEl.appendChild(btn);
+  });
+
+  const track = document.getElementById('track');
+  const token = document.getElementById('token');
+  NODES.forEach((n) => {
+    const btn = document.createElement('button');
+    btn.className = 'node';
+    btn.dataset.key = n.key;
+    btn.innerHTML = '<span class="circle">' + n.label.charAt(0) + '</span><span class="name">' + n.label + '</span>';
+    btn.addEventListener('click', () => {
+      const steps = activeSteps();
+      const idx = steps.indexOf(n.key);
+      if (idx === -1) return;
+      state.stepIndex = idx;
+      render();
+    });
+    track.insertBefore(btn, token);
+  });
+
+  function positionToken() {
+    const steps = activeSteps();
+    const currentKey = steps[state.stepIndex];
+    const nodeEl = track.querySelector('.node[data-key="' + currentKey + '"] .circle');
+    const trackRect = track.getBoundingClientRect();
+    const nodeRect = nodeEl.getBoundingClientRect();
+    token.style.left = (nodeRect.left + nodeRect.width / 2 - trackRect.left) + 'px';
+    token.style.top = (nodeRect.top + nodeRect.height / 2 - trackRect.top) + 'px';
+  }
+
+  function render() {
+    const s = SCENARIOS[state.scenario];
+    const steps = activeSteps();
+    const blockedKey = blockedNode();
+
+    tabsEl.querySelectorAll('.scenario-tab').forEach((t) => t.classList.toggle('on', t.dataset.key === state.scenario));
+
+    const qc = document.getElementById('questionCard');
+    qc.innerHTML = '<div class="thumb">' + s.thumb + '</div><div class="name">' + s.name + '</div>';
+
+    NODES.forEach((n) => {
+      const el = track.querySelector('.node[data-key="' + n.key + '"]');
+      const idxInSteps = steps.indexOf(n.key);
+      el.classList.remove('done', 'current', 'skipped', 'upcoming', 'blocked');
+      if (idxInSteps === -1) {
+        el.classList.add('skipped');
+      } else if (n.key === blockedKey && idxInSteps === state.stepIndex) {
+        el.classList.add('blocked');
+      } else if (idxInSteps < state.stepIndex) {
+        el.classList.add('done');
+      } else if (idxInSteps === state.stepIndex) {
+        el.classList.add('current');
+      } else {
+        el.classList.add('upcoming');
+      }
+    });
+
+    const currentKey = steps[state.stepIndex];
+    const d = detailFor(currentKey);
+    let html = '<div class="step-title">' + d.title + '</div><div class="step-body">' + d.body + '</div>';
+    if (d.verdict) {
+      html += '<div class="verdict ' + d.verdict.cls + '">' + d.verdict.text + '</div>';
+    }
+    if (d.redflags) {
+      html += '<ul class="redflags">' + d.redflags.map((f) => '<li>' + f + '</li>').join('') + '</ul>';
+    }
+    if (d.bubbles) {
+      html += d.bubbles.map((b) => '<div class="bubble">' + b + '</div>').join('');
+    }
+    document.getElementById('detail').innerHTML = html;
+
+    document.getElementById('prevBtn').disabled = state.stepIndex === 0;
+    document.getElementById('nextBtn').disabled = state.stepIndex === steps.length - 1;
+    document.getElementById('stepCount').textContent = (state.stepIndex + 1) + ' / ' + steps.length;
+
+    positionToken();
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (state.stepIndex > 0) { state.stepIndex--; render(); }
+  });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    const steps = activeSteps();
+    if (state.stepIndex < steps.length - 1) { state.stepIndex++; render(); }
+  });
+  window.addEventListener('resize', positionToken);
+
+  render();
+</script>
+</body>
+</html>
