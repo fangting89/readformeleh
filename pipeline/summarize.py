@@ -6,9 +6,14 @@ from typing import Literal
 from pipeline.client import MODEL, encode_image, get_client
 from pipeline.summary_fields import HEDGE_SENTENCE, reconcile_summaries
 
-Language = Literal["en", "zh"]
+Language = Literal["en", "zh", "ms", "ta"]
 
-_LANGUAGE_NAMES = {"en": "English", "zh": "Mandarin Chinese"}
+_LANGUAGE_NAMES = {
+    "en": "English",
+    "zh": "Mandarin Chinese",
+    "ms": "Malay",
+    "ta": "Tamil",
+}
 
 _STRUCTURES = {
     "en": """📬 This letter is from [agency].
@@ -29,6 +34,31 @@ original letter or contact [agency] directly.""",
 [仅当信件照片中确实可见电话号码时才写：有问题吗？可以致电[机构] [信中显示的确切号码] 询问。\
 如果信中没有电话号码，请完全省略这一行——不要编造一个没有号码的"联系我们"提示。]
 **提示：** 这是自动生成的摘要——如有重要事项，请查看原信件或直接联系[机构]。""",
+    "ms": """📬 Surat ini daripada [agensi].
+**Tindakan diperlukan:** [Ya: satu ayat pendek tentang apa yang perlu dibuat, atau \
+"Tidak, tiada apa-apa perlu dibuat!"]
+**Apa yang dinyatakan:** [3-4 ayat pendek, satu idea setiap ayat, bahasa mudah, tiada \
+singkatan yang tidak dijelaskan]
+**Sebelum bila:** [tarikh, atau "Tiada tindakan diperlukan."]
+[jumlah yang terlibat, jika ada]
+[HANYA jika nombor telefon sebenar kelihatan dalam gambar surat: "Ada soalan? \
+Hubungi [agensi] di [nombor tepat yang ditunjukkan]." Buang baris ini sepenuhnya jika \
+tiada nombor telefon kelihatan, jangan cipta baris "hubungi kami" yang umum.]
+**Nota:** Ini adalah ringkasan automatik. Untuk perkara penting, sila semak surat asal \
+atau hubungi [agensi] terus.""",
+    "ta": """📬 இந்த கடிதம் [நிறுவனம்] இடமிருந்து வந்துள்ளது.
+**செய்ய வேண்டியது:** [ஆம்: என்ன செய்ய வேண்டும் என்பதை ஒரு சிறு வரியில் கூறவும், \
+அல்லது "இல்லை, எதுவும் செய்ய வேண்டியதில்லை!"]
+**கடிதத்தில் உள்ளது:** [3-4 சிறு வாக்கியங்கள், ஒவ்வொன்றும் ஒரு கருத்து, எளிய \
+வார்த்தைகள், விரிவாக்கப்படாத சுருக்கங்கள் இல்லை]
+**எப்போதுக்குள்:** [தேதி, அல்லது "எந்த நடவடிக்கையும் தேவையில்லை."]
+[தொடர்புடைய தொகை, ஏதேனும் இருந்தால்]
+[கடித புகைப்படத்தில் உண்மையான தொலைபேசி எண் தெரிந்தால் மட்டும்: "கேள்விகளா? \
+[நிறுவனம்] ஐ [காட்டப்பட்ட சரியான எண்] இல் தொடர்பு கொள்ளவும்." தொலைபேசி எண் \
+தெரியவில்லை என்றால் இந்த வரியை முழுவதுமாக விட்டுவிடவும், எண் இல்லாத பொதுவான \
+"எங்களை தொடர்பு கொள்ளவும்" வரியை உருவாக்க வேண்டாம்.]
+**குறிப்பு:** இது ஒரு தானியங்கி சுருக்கம். முக்கியமான எதற்கும், தயவுசெய்து அசல் \
+கடிதத்தை சரிபார்க்கவும் அல்லது [நிறுவனம்] ஐ நேரடியாக தொடர்பு கொள்ளவும்.""",
 }
 
 _SYSTEM_PROMPT_TEMPLATE = """You write short, plain-language summaries of official letters \

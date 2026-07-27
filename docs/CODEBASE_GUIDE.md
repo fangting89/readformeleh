@@ -1,4 +1,4 @@
-# ReadLeh: Codebase Guide
+# readformeleh: Codebase Guide
 
 This is the fourth doc in the repo, and it does a different job than the
 other three. `docs/DESIGN.md` explains *why* things were built the way

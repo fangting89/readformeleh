@@ -1375,6 +1375,16 @@ wheels = [
 ]
 
 [[package]]
+name = "lehcore"
+version = "0.1.0"
+source = { git = "https://github.com/fangting89/lehcore#1da1b3a3084c11130fd07b6c136bd2102ae31ff3" }
+dependencies = [
+    { name = "anthropic" },
+    { name = "pillow" },
+    { name = "python-dotenv" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2648,12 +2658,13 @@ wheels = [
 ]
 
 [[package]]
-name = "read-leh"
+name = "readformeleh"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "fastapi" },
+    { name = "lehcore" },
     { name = "pillow" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
@@ -2676,6 +2687,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.40" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "lehcore", git = "https://github.com/fangting89/lehcore" },
     { name = "pillow", specifier = ">=10.4" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },

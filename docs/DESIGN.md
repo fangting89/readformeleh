@@ -1,17 +1,17 @@
-# ReadLeh: Design
+# readformeleh: Design
 
 ## What this is
 
-ReadLeh (from "leh", a soft, casual Singlish sentence-particle used to
-ask for a small favour, as in "help me read this leh") is a WhatsApp-native
+readformeleh ("read for me, leh" - "leh" is a soft, casual Singlish
+sentence-particle used to ask for a small favour) is a WhatsApp-native
 bot that helps Singaporean seniors (and their caregivers) understand
 official letters. The name is deliberate design work: it frames the ask as
 a small, casual favour between friends, not a formal request to an
 authority, which supports the stigma-lowering goal of the whole product.
 A user photographs a government letter (CPF, IRAS, HDB, town council) and
 sends it via WhatsApp; the bot replies with a short plain-language summary,
-who it's from, what it says, what to do, by when, in English or
-Mandarin.
+who it's from, what it says, what to do, by when, in English, Mandarin,
+Malay, or Tamil.
 
 ## Why it exists (evidence base)
 

@@ -126,7 +126,11 @@ def test_webhook_with_media_sends_chinese_only_when_preference_is_chinese(
 @patch("app.main.summarize_letter_checked")
 @patch(
     "app.main.classify_letter",
-    return_value={"category": "suspicious", "red_flags": ["urgent threat"]},
+    return_value={
+        "category": "suspicious",
+        "scam_type": "impersonation",
+        "red_flags": ["urgent threat"],
+    },
 )
 @patch("app.main.download_media", return_value=b"fake-image-bytes")
 @patch("app.main.verify_signature", return_value=True)

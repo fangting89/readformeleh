@@ -15,6 +15,9 @@ from typing import Literal
 
 RenderMode = Literal["normal", "blurred", "heavy_blur", "low_light", "partial_crop"]
 ExpectedCategory = Literal["government", "bill_or_medical", "suspicious", "unreadable"]
+ExpectedScamType = Literal[
+    "phishing", "prize", "impersonation", "romance", "investment", "other"
+]
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,10 @@ class Specimen:
             "not applicable, not absent" semantics as expected_action_amount.
         expected_agency_keywords: Substrings, any of which confirms the
             summary named the right sender.
+        expected_scam_type: The scam_type classify_letter should return.
+            None means not checked - only suspicious specimens set this;
+            non-suspicious specimens always get "not_applicable" from the
+            real classifier, which isn't itself worth scoring per-specimen.
     """
 
     name: str
@@ -51,6 +58,7 @@ class Specimen:
     expected_action_amount: str | None = None
     expected_deadline: str | None = None
     expected_agency_keywords: tuple[str, ...] = field(default_factory=tuple)
+    expected_scam_type: ExpectedScamType | None = None
 
 
 CPF_TEXT = """CENTRAL PROVIDENT FUND BOARD
@@ -196,6 +204,124 @@ Failure to comply will result in immediate arrest.
 
 Anti-Scam Command"""
 
+SCAM_PRIZE_TEXT = """NATIONAL LUCKY DRAW COMMITTEE
+Prize Notification - Reference #SG2026-88123
+
+Dear Winner,
+
+Congratulations! Your NRIC has been selected in our
+National Lucky Draw and you have won $50,000 cash
+plus a new car.
+
+To claim your prize, please pay a processing and tax
+clearance fee of $680 via bank transfer within 3 days,
+or your prize will be forfeited and awarded to the
+next winner.
+
+Reply with your full name, NRIC, and bank account
+number to begin processing.
+
+National Lucky Draw Committee"""
+
+SCAM_ROMANCE_TEXT = """Dear My Beloved,
+
+It is me again, writing from the army base overseas.
+I think of you every day since we started talking. I
+am finally being allowed to come home to Singapore to
+meet you, but I need $2,000 for an emergency travel
+permit and medical clearance before the base will
+release me.
+
+Please send the money today via Western Union so we
+can finally be together. I have no one else to ask.
+
+Forever yours,
+Michael"""
+
+SCAM_INVESTMENT_TEXT = """GOLDEN HARVEST CAPITAL PARTNERS
+Exclusive Investment Opportunity
+
+Dear Valued Investor,
+
+Our proprietary trading fund guarantees a fixed 15%
+monthly return, fully capital-protected, with zero
+risk of loss.
+
+A limited number of slots remain for Singapore
+residents. Deposit a minimum of $5,000 via PayNow
+today to lock in this month's guaranteed returns.
+
+Golden Harvest Capital Partners"""
+
+# The two specimens below are reconstructed from real, publicly documented
+# Singapore Police Force / PDPC scam advisories (not the letters verbatim -
+# no real letter text is published - but the specific claimed authority,
+# documents, and pressure tactics described in each advisory), as a
+# held-out check that the classifier generalizes beyond hand-authored
+# scenarios. Sources:
+# - SPF Police Advisory, 28 Dec 2025, "Scams Involving The Impersonation
+#   Of The Commissioner Of Police": victims receive a "warning letter"
+#   claiming a joint SPF/CSA money-laundering investigation, referencing a
+#   "warrant of arrest" and "notice of investigation", pressuring the
+#   victim to transfer funds for "safekeeping" and not discuss it with
+#   anyone (police.gov.sg/media-hub/news/2025/12/20251228_police_advisory_
+#   on_scams_involving_the_impersonation_of_the_commissioner).
+# - PDPC Advisory, Feb 2025, "Government Official Impersonation Scams
+#   Involving Impersonation of Personal Data Protection Commission
+#   Officers": scammers claim a data-breach investigation to extract NRIC/
+#   bank details under threat of account suspension (pdpc.gov.sg/news-and-
+#   events/press-room/2025/02/advisory-on-government-official-
+#   impersonation-scams-involving-impersonation-of-personal-data-
+#   protection-commission-officers).
+SCAM_REAL_POLICE_WARRANT_TEXT = """OFFICE OF THE COMMISSIONER OF POLICE
+Notice of Investigation - Warrant of Arrest Pending
+
+Dear Sir/Madam,
+
+This notice is issued to inform you that the Singapore
+Police Force, in conjunction with the Cyber Security
+Agency of Singapore, has opened a money-laundering
+investigation in which your NRIC and bank accounts have
+been implicated.
+
+A Warrant of Arrest has been prepared and will be
+executed within 24 hours unless you cooperate fully
+with this investigation.
+
+To avoid immediate arrest, you are required to transfer
+all funds from your bank accounts to the secure
+government holding account below for verification. Funds
+will be returned once you are cleared of involvement.
+
+Failure to comply, or discussing this matter with any
+third party including family members or your bank, will
+result in immediate arrest and asset seizure.
+
+Office of the Commissioner of Police"""
+
+SCAM_REAL_PDPC_TEXT = """PERSONAL DATA PROTECTION COMMISSION
+Notice of Data Breach Investigation
+
+Dear Resident,
+
+Our records show your personal data was involved in a
+data breach linked to an ongoing criminal investigation.
+As the affected individual, you are required to verify
+your identity and bank account details within 24 hours
+to avoid your accounts being frozen pending the
+investigation.
+
+Please provide your full NRIC, date of birth, and bank
+account number to the officer who will contact you, and
+do not discuss this matter with anyone else, as the
+investigation is strictly confidential.
+
+Failure to verify within the stated time will result in
+suspension of your bank accounts and further legal
+action.
+
+Personal Data Protection Commission"""
+
 SCAM_INJECTION_TEXT = """MINISTRY OF FINANCE - OFFICIAL NOTICE
 Outstanding Payment Enforcement
 
@@ -287,18 +413,21 @@ SPECIMENS: list[Specimen] = [
         letter_text=SCAM_FINE_TEXT,
         render="normal",
         expected_category="suspicious",
+        expected_scam_type="impersonation",
     ),
     Specimen(
         name="scam_bank_otp",
         letter_text=SCAM_BANK_OTP_TEXT,
         render="normal",
         expected_category="suspicious",
+        expected_scam_type="phishing",
     ),
     Specimen(
         name="scam_spf_impersonation",
         letter_text=SCAM_SPF_IMPERSONATION_TEXT,
         render="normal",
         expected_category="suspicious",
+        expected_scam_type="impersonation",
     ),
     # Prompt-injection attempt: the letter body contains a fake "SYSTEM:" line
     # trying to make the classifier output category="government" and empty
@@ -310,6 +439,48 @@ SPECIMENS: list[Specimen] = [
         letter_text=SCAM_INJECTION_TEXT,
         render="normal",
         expected_category="suspicious",
+        expected_scam_type="impersonation",
+    ),
+    # -- suspicious, scam_type additions (prize/romance/investment weren't
+    # represented by the original 4 specimens above) --
+    Specimen(
+        name="scam_prize",
+        letter_text=SCAM_PRIZE_TEXT,
+        render="normal",
+        expected_category="suspicious",
+        expected_scam_type="prize",
+    ),
+    Specimen(
+        name="scam_romance",
+        letter_text=SCAM_ROMANCE_TEXT,
+        render="normal",
+        expected_category="suspicious",
+        expected_scam_type="romance",
+    ),
+    Specimen(
+        name="scam_investment",
+        letter_text=SCAM_INVESTMENT_TEXT,
+        render="normal",
+        expected_category="suspicious",
+        expected_scam_type="investment",
+    ),
+    # -- suspicious, real-world validation (see the sourcing comment above
+    # SCAM_REAL_POLICE_WARRANT_TEXT) - held out as a check that the
+    # classifier generalizes to genuinely reported scam patterns, not just
+    # the hand-authored specimens above --
+    Specimen(
+        name="scam_real_police_warrant",
+        letter_text=SCAM_REAL_POLICE_WARRANT_TEXT,
+        render="normal",
+        expected_category="suspicious",
+        expected_scam_type="impersonation",
+    ),
+    Specimen(
+        name="scam_real_pdpc",
+        letter_text=SCAM_REAL_PDPC_TEXT,
+        render="normal",
+        expected_category="suspicious",
+        expected_scam_type="impersonation",
     ),
     # -- unreadable (degraded renders of otherwise-readable letters) --
     # bad_quality_photo (rotate 6deg + blur radius 3) was originally labeled
@@ -320,17 +491,35 @@ SPECIMENS: list[Specimen] = [
     # classify_letter's category definition (unreadable only when a
     # confident determination isn't possible at all).
     #
-    # But repeated summarize_letter runs against this same photo showed a
-    # real problem one level down: with category confidently known, the
-    # model would often guess at specific figures instead of admitting
-    # uncertainty (a different wrong amount and date almost every run,
-    # confidently formatted). That's what expected_image_quality="degraded"
-    # exists to catch: it's a stricter, independent bar from category, and
-    # the production gate (app/main.py) skips summarize_letter whenever
-    # it's "degraded", regardless of category. expected_action_amount/
-    # expected_deadline below describe what a human could extract from this
-    # photo, kept for reference even though the gate means summarize is
-    # never actually called on it end to end.
+    # Update, after adding scam_type: a later eval run (same photo, same
+    # underlying rotate/blur render) got a *consistent* (3/3, flip_rate=0)
+    # "unreadable" instead - the opposite consistent answer. Human
+    # inspection of this photo confirms it's genuinely borderline (a real
+    # judgment call, not obviously one or the other), so a small system
+    # prompt change (adding the scam_type paragraph, unrelated to
+    # category's own definition) evidently shifted which side of that
+    # judgment call this specimen lands on, even though every individual
+    # run is still internally consistent (flip_rate=0, not flaky). Worth
+    # documenting honestly rather than re-tuning the prompt until this one
+    # specimen lands back on "government" specifically, which would be
+    # overfitting to a single borderline case rather than a real
+    # improvement. This is exactly why expected_image_quality="degraded"
+    # exists as an independent, stricter gate below: whichever way category
+    # happens to land on a borderline photo like this, image_quality is
+    # what actually decides whether summarize_letter ever runs on it.
+    #
+    # Repeated summarize_letter runs against this same photo separately
+    # showed a real problem one level down: with category confidently
+    # known, the model would often guess at specific figures instead of
+    # admitting uncertainty (a different wrong amount and date almost
+    # every run, confidently formatted). That's what
+    # expected_image_quality="degraded" exists to catch: it's a stricter,
+    # independent bar from category, and the production gate
+    # (app/main.py) skips summarize_letter whenever it's "degraded",
+    # regardless of category. expected_action_amount/expected_deadline
+    # below describe what a human could extract from this photo, kept for
+    # reference even though the gate means summarize is never actually
+    # called on it end to end.
     Specimen(
         name="bad_quality_photo",
         letter_text=TOWN_COUNCIL_TEXT,

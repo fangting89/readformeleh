@@ -125,11 +125,15 @@ async def whatsapp_webhook(
         return _twiml(messages.ACK)
 
     lowered_body = body.lower()
-    if (
-        lowered_body in messages.CHINESE_KEYWORDS
-        or lowered_body in messages.ENGLISH_KEYWORDS
-    ):
-        target_lang = "zh" if lowered_body in messages.CHINESE_KEYWORDS else "en"
+    target_lang = next(
+        (
+            lang
+            for lang, keywords in messages.LANGUAGE_KEYWORD_SETS.items()
+            if lowered_body in keywords
+        ),
+        None,
+    )
+    if target_lang is not None:
         _language_preference.set(sender, target_lang)
         logger.info("sender=%s set language preference=%s", sender_hash, target_lang)
 
@@ -138,7 +142,7 @@ async def whatsapp_webhook(
             return _twiml(messages.NO_CACHED_SUMMARY)
         if target_lang == "en":
             return _twiml(cached_en)
-        return _twiml(translate_summary(cached_en, "zh"))
+        return _twiml(translate_summary(cached_en, target_lang))
 
     return _twiml(messages.USAGE_INSTRUCTIONS)
 
@@ -171,10 +175,13 @@ def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
             if result["category"] == "suspicious":
                 # Safe to log: classify_letter's prompt requires red flags to
                 # be described generically, never quoting NRIC/address/amount
-                # from the letter itself.
+                # from the letter itself. scam_type is an independent axis
+                # (see pipeline/classify.py) - it never changes this branch,
+                # only adds detail to the log line.
                 logger.info(
-                    "sender=%s flagged suspicious, red_flags=%s",
+                    "sender=%s flagged suspicious, scam_type=%s, red_flags=%s",
                     sender_hash,
+                    result["scam_type"],
                     result["red_flags"],
                 )
                 _consecutive_failures.reset(sender)  # photo was legible
@@ -212,13 +219,19 @@ def _process_letter(sender: str, media_url: str, sender_hash: str) -> None:
             preference = _language_preference.get(sender)
             if preference == "en":
                 reply = summary_en
-            elif preference == "zh":
-                reply = translate_summary(summary_en, "zh")
+            elif preference is not None:
+                # "zh"/"ms"/"ta" all take the same path: translate_summary
+                # handles any of the 4 output languages generically.
+                reply = translate_summary(summary_en, preference)
             else:
-                # No preference known yet: bilingual by default, since a
-                # sender who can't read English may not understand an
-                # English-only instruction telling them how to ask for
-                # Mandarin.
+                # No preference known yet: bilingual (English+Mandarin) by
+                # default, unchanged from before Malay/Tamil support was
+                # added - a sender who can't read English may not
+                # understand an English-only instruction telling them how
+                # to ask for another language, and defaulting to all 4
+                # would make every first reply much longer. A sender can
+                # still explicitly ask for Malay or Tamil at any time via
+                # the same keyword toggle (see messages.LANGUAGE_KEYWORD_SETS).
                 reply = messages.bilingual_summary(
                     summary_en, translate_summary(summary_en, "zh")
                 )

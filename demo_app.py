@@ -8,12 +8,20 @@ and unreadable letters are never summarized, degraded-quality photos are
 never summarized either, only image_quality == "clear" letters reach
 summarize_letter_checked's independent double-read.
 
-Scoped to the 14 existing samples/*.jpg specimens only, no photo upload.
+Scoped to the pre-generated samples/*.jpg specimens only, no photo upload.
 Two reasons: classify_letter + summarize_letter_checked together cost 3
 Claude vision calls per analysis (vision tokens cost more than text), and
 a public demo that accepted arbitrary uploads would mean strangers'
 personal documents flowing through an API key this project pays for,
 in tension with the product's own "nothing is stored" privacy stance.
+
+Also rate-capped per session (MAX_ANALYSES_PER_SESSION below) as a second,
+independent cost/abuse control - deliberately scoped to per-session, not a
+persisted daily cap: a static Streamlit Community Cloud demo has no shared
+database to count against across sessions/restarts without adding real
+infra for a portfolio demo, so a session-local counter is the honest,
+achievable version of this control (see the README's Scalability section
+for what a real production rate limit would need instead).
 
 samples/*.jpg are gitignored (samples/README.md's policy: never commit a
 real letter), and these are 100% synthetic specimens, so that policy
@@ -35,6 +43,8 @@ from pipeline.summarize import summarize_letter_checked, translate_summary
 from scripts.generate_samples import main as generate_samples
 
 SAMPLES_DIR = Path(__file__).resolve().parent / "samples"
+
+MAX_ANALYSES_PER_SESSION = 15
 
 
 @st.cache_resource
@@ -63,6 +73,14 @@ SAMPLE_LETTERS = [
     ("Fake Bank OTP Scam (suspicious test)", "scam_bank_otp.jpg"),
     ("Fake Police Scam (suspicious test)", "scam_spf_impersonation.jpg"),
     ("Prompt-Injection Scam (suspicious test)", "scam_prompt_injection.jpg"),
+    ("Lucky Draw Prize Scam (suspicious test)", "scam_prize.jpg"),
+    ("Romance Scam (suspicious test)", "scam_romance.jpg"),
+    ("Guaranteed-Returns Investment Scam (suspicious test)", "scam_investment.jpg"),
+    (
+        "Fake Police Warrant Scam, real advisory (suspicious test)",
+        "scam_real_police_warrant.jpg",
+    ),
+    ("Fake PDPC Officer Scam, real advisory (suspicious test)", "scam_real_pdpc.jpg"),
 ]
 
 DISCLAIMER = (
@@ -71,8 +89,8 @@ DISCLAIMER = (
     "letters, it does not send or receive real WhatsApp messages."
 )
 
-st.set_page_config(page_title="ReadLeh", page_icon="🙏")
-st.title("ReadLeh")
+st.set_page_config(page_title="ReadForMeLeh", page_icon="🙏")
+st.title("ReadForMeLeh")
 st.caption(
     "See what happens after a photo of a government letter is sent on "
     "WhatsApp, using the real pipeline behind the bot."
@@ -80,7 +98,7 @@ st.caption(
 st.caption(f"⚠️ {DISCLAIMER}")
 
 with st.sidebar:
-    st.header("About ReadLeh")
+    st.header("About ReadForMeLeh")
     st.write(
         "A WhatsApp bot that explains official letters (CPF, IRAS, HDB, "
         "town council) in plain language, with a scam-detection safety "
@@ -95,7 +113,7 @@ with st.sidebar:
     )
     st.divider()
     st.caption(DISCLAIMER)
-    st.caption("[Source on GitHub](https://github.com/fangting89/read-leh)")
+    st.caption("[Source on GitHub](https://github.com/fangting89/readformeleh)")
 
 label_to_filename = dict(SAMPLE_LETTERS)
 chosen_label = st.selectbox("Choose a sample letter", list(label_to_filename))
@@ -112,7 +130,16 @@ if str(photo_path) != st.session_state.get("photo_path"):
     st.session_state.photo_path = str(photo_path)
     st.session_state.analysis = None
 
-if st.button("Analyze this letter", type="primary"):
+analyses_used = st.session_state.get("analysis_count", 0)
+if analyses_used >= MAX_ANALYSES_PER_SESSION:
+    st.button("Analyze this letter", type="primary", disabled=True)
+    st.caption(
+        f"⚠️ This demo caps analyses at {MAX_ANALYSES_PER_SESSION} per session "
+        "to control API cost (each analysis costs real Claude vision calls). "
+        "Refresh the page to reset."
+    )
+elif st.button("Analyze this letter", type="primary"):
+    st.session_state.analysis_count = analyses_used + 1
     with st.spinner("Reading the letter..."):
         classify_result = classify_letter(photo_path)
 
@@ -124,7 +151,8 @@ if st.button("Analyze this letter", type="primary"):
             summary_en = summarize_letter_checked(photo_path)
 
     st.session_state.analysis = {"classify": classify_result, "summary_en": summary_en}
-    st.session_state.summary_zh = None
+    for lang_code in ("zh", "ms", "ta"):
+        st.session_state[f"summary_{lang_code}"] = None
 
 analysis = st.session_state.get("analysis")
 if analysis:
@@ -136,8 +164,8 @@ if analysis:
 
     if result["category"] == "suspicious":
         st.error(
-            "This letter looks suspicious, it won't be summarized "
-            "(that could help a scammer). Red flags noticed:"
+            f"This letter looks suspicious (scam type: `{result['scam_type']}`), "
+            "it won't be summarized (that could help a scammer). Red flags noticed:"
         )
         for flag in result["red_flags"]:
             st.markdown(f"- {flag}")
@@ -156,14 +184,22 @@ if analysis:
             "something the model can talk its way past."
         )
     else:
-        lang = st.radio("Language", ["English", "中文"], horizontal=True)
+        language_options = {
+            "English": "en",
+            "中文": "zh",
+            "Bahasa Melayu": "ms",
+            "தமிழ்": "ta",
+        }
+        lang_label = st.radio("Language", list(language_options), horizontal=True)
+        target_lang = language_options[lang_label]
         with st.container(border=True):
-            if lang == "中文":
-                if st.session_state.get("summary_zh") is None:
-                    with st.spinner("Translating..."):
-                        st.session_state.summary_zh = translate_summary(
-                            analysis["summary_en"], "zh"
-                        )
-                st.write(st.session_state.summary_zh)
-            else:
+            if target_lang == "en":
                 st.write(analysis["summary_en"])
+            else:
+                cache_key = f"summary_{target_lang}"
+                if st.session_state.get(cache_key) is None:
+                    with st.spinner("Translating..."):
+                        st.session_state[cache_key] = translate_summary(
+                            analysis["summary_en"], target_lang
+                        )
+                st.write(st.session_state[cache_key])

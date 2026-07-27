@@ -80,19 +80,26 @@ def _run_classify_eval() -> dict:
     confusion: Counter[tuple[str, str]] = Counter()  # (expected, predicted)
     per_specimen: dict[str, dict] = {}
     quality_checks: list[bool] = []
+    scam_type_checks: list[bool] = []
 
     for specimen in SPECIMENS:
         image_path = SAMPLES_DIR / f"{specimen.name}.jpg"
         predictions = []
         quality_predictions = []
+        scam_type_predictions = []
         for _ in range(CLASSIFY_REPEATS):
             result = classify_letter(image_path)
             predictions.append(result["category"])
             quality_predictions.append(result["image_quality"])
+            scam_type_predictions.append(result["scam_type"])
             confusion[(specimen.expected_category, result["category"])] += 1
             if specimen.expected_image_quality is not None:
                 quality_checks.append(
                     result["image_quality"] == specimen.expected_image_quality
+                )
+            if specimen.expected_scam_type is not None:
+                scam_type_checks.append(
+                    result["scam_type"] == specimen.expected_scam_type
                 )
         counts = Counter(predictions)
         majority, majority_count = counts.most_common(1)[0]
@@ -103,6 +110,8 @@ def _run_classify_eval() -> dict:
             "majority_correct": majority == specimen.expected_category,
             "expected_image_quality": specimen.expected_image_quality,
             "image_quality_predictions": quality_predictions,
+            "expected_scam_type": specimen.expected_scam_type,
+            "scam_type_predictions": scam_type_predictions,
         }
 
     total = sum(confusion.values())
@@ -140,6 +149,10 @@ def _run_classify_eval() -> dict:
         if quality_checks
         else None,
         "image_quality_trials": len(quality_checks),
+        "scam_type_accuracy": _round(sum(scam_type_checks) / len(scam_type_checks))
+        if scam_type_checks
+        else None,
+        "scam_type_trials": len(scam_type_checks),
         "per_specimen": per_specimen,
         "note": (
             "suspicious.recall is the safety-critical number: it's the "
@@ -148,7 +161,11 @@ def _run_classify_eval() -> dict:
             "temperature=0 on that input. image_quality_accuracy is a "
             "second, independent gate: it's what actually decides whether "
             "summarize_letter runs at all (see app/main.py), so it matters "
-            "as much as category accuracy for specimens where it's checked."
+            "as much as category accuracy for specimens where it's checked. "
+            "scam_type_accuracy is a third, independent axis, scored only "
+            "on suspicious specimens - it never affects whether the letter "
+            "gets summarized (that's still category alone), it's additional "
+            "detail for the reader's awareness."
         ),
     }
 
@@ -315,6 +332,10 @@ def main() -> None:
     print(
         f"  image_quality gate accuracy: {classify_results['image_quality_accuracy']} "
         f"({classify_results['image_quality_trials']} trials)"
+    )
+    print(
+        f"  scam_type accuracy: {classify_results['scam_type_accuracy']} "
+        f"({classify_results['scam_type_trials']} trials)"
     )
 
     print("\n=== summarize: pass rates across all scored runs ===")

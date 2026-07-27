@@ -61,6 +61,18 @@ PROCESSING_ERROR = (
 
 CHINESE_KEYWORDS = {"中文", "zh", "chinese", "mandarin"}
 ENGLISH_KEYWORDS = {"english", "en"}
+MALAY_KEYWORDS = {"melayu", "bahasa melayu", "bahasa", "ms", "malay"}
+TAMIL_KEYWORDS = {"தமிழ்", "ta", "tamil"}
+
+# Maps each keyword set to the language code it selects. Order matters only
+# in that every set must be disjoint; app/main.py looks up a message's
+# lowercased body against this, one set at a time.
+LANGUAGE_KEYWORD_SETS = {
+    "en": ENGLISH_KEYWORDS,
+    "zh": CHINESE_KEYWORDS,
+    "ms": MALAY_KEYWORDS,
+    "ta": TAMIL_KEYWORDS,
+}
 
 
 def bilingual_summary(english: str, chinese: str) -> str:

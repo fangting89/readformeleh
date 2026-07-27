@@ -1,12 +1,12 @@
 {
   "classify": {
-    "trials": 42,
-    "accuracy": 1.0,
+    "trials": 57,
+    "accuracy": 0.947,
     "per_class": {
       "government": {
         "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "recall": 0.8,
+        "f1": 0.889,
         "support": 15
       },
       "bill_or_medical": {
@@ -19,17 +19,19 @@
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 12
+        "support": 27
       },
       "unreadable": {
-        "precision": 1.0,
+        "precision": 0.75,
         "recall": 1.0,
-        "f1": 1.0,
+        "f1": 0.857,
         "support": 9
       }
     },
     "image_quality_accuracy": 1.0,
     "image_quality_trials": 21,
+    "scam_type_accuracy": 1.0,
+    "scam_type_trials": 27,
     "per_specimen": {
       "cpf_statement": {
         "expected": "government",
@@ -45,6 +47,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "iras_notice": {
@@ -61,6 +69,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "town_council_notice": {
@@ -77,6 +91,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "hdb_notice": {
@@ -93,6 +113,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "polyclinic_bill": {
@@ -109,6 +135,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "dental_clinic_bill": {
@@ -125,6 +157,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "scam_letter": {
@@ -141,6 +179,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": "impersonation",
+        "scam_type_predictions": [
+          "impersonation",
+          "impersonation",
+          "impersonation"
         ]
       },
       "scam_bank_otp": {
@@ -157,6 +201,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": "phishing",
+        "scam_type_predictions": [
+          "phishing",
+          "phishing",
+          "phishing"
         ]
       },
       "scam_spf_impersonation": {
@@ -173,6 +223,12 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": "impersonation",
+        "scam_type_predictions": [
+          "impersonation",
+          "impersonation",
+          "impersonation"
         ]
       },
       "scam_prompt_injection": {
@@ -189,22 +245,144 @@
           "clear",
           "clear",
           "clear"
+        ],
+        "expected_scam_type": "impersonation",
+        "scam_type_predictions": [
+          "impersonation",
+          "impersonation",
+          "impersonation"
+        ]
+      },
+      "scam_prize": {
+        "expected": "suspicious",
+        "predictions": [
+          "suspicious",
+          "suspicious",
+          "suspicious"
+        ],
+        "flip_rate": 0.0,
+        "majority_correct": true,
+        "expected_image_quality": null,
+        "image_quality_predictions": [
+          "clear",
+          "clear",
+          "clear"
+        ],
+        "expected_scam_type": "prize",
+        "scam_type_predictions": [
+          "prize",
+          "prize",
+          "prize"
+        ]
+      },
+      "scam_romance": {
+        "expected": "suspicious",
+        "predictions": [
+          "suspicious",
+          "suspicious",
+          "suspicious"
+        ],
+        "flip_rate": 0.0,
+        "majority_correct": true,
+        "expected_image_quality": null,
+        "image_quality_predictions": [
+          "clear",
+          "clear",
+          "clear"
+        ],
+        "expected_scam_type": "romance",
+        "scam_type_predictions": [
+          "romance",
+          "romance",
+          "romance"
+        ]
+      },
+      "scam_investment": {
+        "expected": "suspicious",
+        "predictions": [
+          "suspicious",
+          "suspicious",
+          "suspicious"
+        ],
+        "flip_rate": 0.0,
+        "majority_correct": true,
+        "expected_image_quality": null,
+        "image_quality_predictions": [
+          "clear",
+          "clear",
+          "clear"
+        ],
+        "expected_scam_type": "investment",
+        "scam_type_predictions": [
+          "investment",
+          "investment",
+          "investment"
+        ]
+      },
+      "scam_real_police_warrant": {
+        "expected": "suspicious",
+        "predictions": [
+          "suspicious",
+          "suspicious",
+          "suspicious"
+        ],
+        "flip_rate": 0.0,
+        "majority_correct": true,
+        "expected_image_quality": null,
+        "image_quality_predictions": [
+          "clear",
+          "clear",
+          "clear"
+        ],
+        "expected_scam_type": "impersonation",
+        "scam_type_predictions": [
+          "impersonation",
+          "impersonation",
+          "impersonation"
+        ]
+      },
+      "scam_real_pdpc": {
+        "expected": "suspicious",
+        "predictions": [
+          "suspicious",
+          "suspicious",
+          "suspicious"
+        ],
+        "flip_rate": 0.0,
+        "majority_correct": true,
+        "expected_image_quality": null,
+        "image_quality_predictions": [
+          "clear",
+          "clear",
+          "clear"
+        ],
+        "expected_scam_type": "impersonation",
+        "scam_type_predictions": [
+          "impersonation",
+          "impersonation",
+          "impersonation"
         ]
       },
       "bad_quality_photo": {
         "expected": "government",
         "predictions": [
-          "government",
-          "government",
-          "government"
+          "unreadable",
+          "unreadable",
+          "unreadable"
         ],
         "flip_rate": 0.0,
-        "majority_correct": true,
+        "majority_correct": false,
         "expected_image_quality": "degraded",
         "image_quality_predictions": [
           "degraded",
           "degraded",
           "degraded"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "heavy_blur_notice": {
@@ -221,6 +399,12 @@
           "degraded",
           "degraded",
           "degraded"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "low_light_notice": {
@@ -237,6 +421,12 @@
           "degraded",
           "degraded",
           "degraded"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       },
       "partial_crop_notice": {
@@ -253,10 +443,16 @@
           "degraded",
           "degraded",
           "degraded"
+        ],
+        "expected_scam_type": null,
+        "scam_type_predictions": [
+          "not_applicable",
+          "not_applicable",
+          "not_applicable"
         ]
       }
     },
-    "note": "suspicious.recall is the safety-critical number: it's the catch rate on scam specimens. flip_rate > 0 for any specimen means classify_letter is not fully deterministic at temperature=0 on that input. image_quality_accuracy is a second, independent gate: it's what actually decides whether summarize_letter runs at all (see app/main.py), so it matters as much as category accuracy for specimens where it's checked."
+    "note": "suspicious.recall is the safety-critical number: it's the catch rate on scam specimens. flip_rate > 0 for any specimen means classify_letter is not fully deterministic at temperature=0 on that input. image_quality_accuracy is a second, independent gate: it's what actually decides whether summarize_letter runs at all (see app/main.py), so it matters as much as category accuracy for specimens where it's checked. scam_type_accuracy is a third, independent axis, scored only on suspicious specimens - it never affects whether the letter gets summarized (that's still category alone), it's additional detail for the reader's awareness."
   },
   "summarize": {
     "specimens_scored": 6,
@@ -272,7 +468,7 @@
       "cpf_statement": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from the Central Provident Fund Board.\n\n**Action needed:** No, nothing to do!\n\n**What it says:** This statement shows your CPF contributions for January to June 2026.\nYou received $9,240.00 in contributions during this period.\nYour CPF account balances as of 30 June 2026 are: Ordinary Account $54,120.33, Special Account $21,880.10, and MediSave Account $18,502.44.\nThis letter is for your records only.\n\n**By when:** No action needed.\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Central Provident Fund Board directly.",
+            "summary": "\ud83d\udcec This letter is from the Central Provident Fund Board.\n\n**Action needed:** No, nothing to do!\n\n**What it says:** This statement shows your CPF contributions for January to June 2026.\nYou received $9,240.00 in contributions during this period.\nYour CPF savings are: Ordinary Account $54,120.33, Special Account $21,880.10, and MediSave Account $18,502.44.\nThis letter is just for your records.\n\n**By when:** No action needed.\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact the Central Provident Fund Board directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": null,
@@ -288,7 +484,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from the Central Provident Fund Board.\n\n**Action needed:** No, nothing to do!\n\n**What it says:** This statement shows your CPF contributions from January 2026 to June 2026.\nYou received $9,240.00 in contributions during this period.\nYour CPF account balances as at 30 June 2026 are: Ordinary Account $54,120.33, Special Account $21,880.10, and MediSave Account $18,502.44.\nThis is for your records only \u2014 no action is needed from you.\n\n**By when:** No action needed.\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Central Provident Fund Board directly.",
+            "summary": "\ud83d\udcec This letter is from the Central Provident Fund Board.\n\n**Action needed:** No, nothing to do!\n\n**What it says:** This statement shows your CPF contributions for January to June 2026.\nYou received $9,240.00 in contributions during this period.\nYour CPF account balances as of 30 June 2026 are: Ordinary Account $54,120.33, Special Account $21,880.10, and MediSave Account $18,502.44.\nThis is just for your records.\n\n**By when:** No action needed.\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact the Central Provident Fund Board directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": null,
@@ -308,7 +504,7 @@
       "iras_notice": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from the Inland Revenue Authority of Singapore.\n\n**Action needed:** Yes \u2014 **pay $1,180.00 by 31 Aug 2026**.\n\n**What it says:** Your income tax for the year 2026 has been worked out. Your chargeable income is $52,000. You owe $1,180.00 in tax. You can pay by GIRO, PayNow, or AXS. If you pay late, there is a 5% penalty.\n\n**By when:** 31 Aug 2026\n\n$1,180.00\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Inland Revenue Authority of Singapore directly.",
+            "summary": "\ud83d\udcec This letter is from the Inland Revenue Authority of Singapore (IRAS).\n\n**Action needed:** Yes: **Pay $1,180.00 by 31 August 2026.**\n\n**What it says:** Your income tax for the year 2026 has been calculated.\nYour chargeable income is $52,000.\nYou owe $1,180.00 in tax.\nYou can pay using GIRO, PayNow, or AXS. If you pay late, a 5% penalty will be added.\n\n**By when:** 31 August 2026\n\n$1,180.00\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact IRAS directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -319,7 +515,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from the Inland Revenue Authority of Singapore.\n\n**Action needed:** Yes \u2014 **pay $1,180.00 by 31 August 2026.**\n\n**What it says:** Your income tax for the year 2026 has been calculated.\nYour chargeable income is $52,000.\nYou owe $1,180.00 in tax.\nYou can pay through GIRO, PayNow, or AXS, but late payment will cost you an extra 5% penalty.\n\n**By when:** 31 August 2026\n\n$1,180.00\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Inland Revenue Authority of Singapore directly.",
+            "summary": "\ud83d\udcec This letter is from the Inland Revenue Authority of Singapore.\n\n**Action needed:** Yes, **pay your tax of $1,180.00 by 31 August 2026**.\n\n**What it says:** Your income tax for the year 2026 has been worked out based on your earnings of $52,000.\nYou owe $1,180.00 in tax.\nYou can pay through GIRO, PayNow, or AXS.\nIf you pay late, a 5% penalty will be added.\n\n**By when:** 31 August 2026\n\n$1,180.00\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact the Inland Revenue Authority of Singapore directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -334,7 +530,7 @@
       "town_council_notice": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from Ang Mo Kio Town Council.\n\n**Action needed:** Yes \u2014 **pay $89.50 by 25 Jul 2026**.\n\n**What it says:** Your conservancy charges for July 2026 have not been paid yet.\nThe amount owing is $89.50.\nIf you do not pay by 25 July 2026, you will be charged a late payment surcharge.\nYou can pay via AXS, SAM, or GIRO.\n\n**By when:** 25 Jul 2026\n\n$89.50\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact Ang Mo Kio Town Council directly.",
+            "summary": "\ud83d\udcec This letter is from Ang Mo Kio Town Council.\n\n**Action needed:** Yes, **pay $89.50 by 25 Jul 2026** to avoid a late charge.\n\n**What it says:** Your conservancy charges for July 2026 have not been paid yet.\nThe amount owing is $89.50.\nYou can pay by AXS, SAM, or GIRO.\n\n**By when:** 25 Jul 2026\n\n$89.50\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact Ang Mo Kio Town Council directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -345,7 +541,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from Ang Mo Kio Town Council.\n\n**Action needed:** Yes \u2014 **pay $89.50 by 25 Jul 2026**.\n\n**What it says:** Your conservancy charges for July 2026 have not been paid.\nThe amount owing is $89.50.\nIf you pay late, you will be charged an extra fee.\nYou can pay by AXS, SAM, or GIRO.\n\n**By when:** 25 Jul 2026\n\n$89.50\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact Ang Mo Kio Town Council directly.",
+            "summary": "\ud83d\udcec This letter is from Ang Mo Kio Town Council.\n\n**Action needed:** Yes. Pay $89.50 by 25 Jul 2026.\n\n**What it says:** You owe conservancy charges for July 2026.\nThe amount is $89.50 and it is not yet paid.\nPay by 25 July 2026 to avoid extra late fees.\nYou can pay through AXS, SAM, or GIRO.\n\n**By when:** 25 Jul 2026\n\n$89.50\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact Ang Mo Kio Town Council directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -360,7 +556,7 @@
       "hdb_notice": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from the Housing & Development Board.\n\n**Action needed:** Yes \u2014 register your choice of works by 15 August 2026 using the HDB e-service.\n\n**What it says:** Your block has been chosen for the Home Improvement Programme. You need to tell HDB which works you want done. You can do this online through the HDB e-service. No money is needed right now.\n\n**By when:** 15 August 2026\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Housing & Development Board directly.",
+            "summary": "\ud83d\udcec This letter is from the Housing & Development Board.\n\n**Action needed:** Yes, **register your interest by 15 August 2026** using the HDB e-service.\n\n**What it says:** Your block has been chosen for the Home Improvement Programme.\nYou need to tell HDB which repair works you want.\nYou can do this online through the HDB e-service.\nNo money is needed right now.\n\n**By when:** 15 August 2026\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact the Housing & Development Board directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": null,
@@ -371,7 +567,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from the Housing & Development Board.\n\n**Action needed:** Yes \u2014 **register your interest by 15 August 2026 using the HDB e-service**.\n\n**What it says:** Your block has been chosen for the Home Improvement Programme.\nYou need to tell HDB which repair works you want done.\nYou can do this online through the HDB e-service.\nNo money is needed from you right now.\n\n**By when:** 15 August 2026\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact the Housing & Development Board directly.",
+            "summary": "\ud83d\udcec This letter is from the Housing & Development Board.\n\n**Action needed:** Yes. **Register your interest by 15 Aug 2026 using the HDB e-service.**\n\n**What it says:** Your block has been chosen for the Home Improvement Programme.\nYou need to tell HDB which repair works you want.\nYou can do this online through the HDB e-service.\nNo payment is needed right now.\n\n**By when:** 15 August 2026\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact the Housing & Development Board directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": null,
@@ -386,7 +582,7 @@
       "polyclinic_bill": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from National Healthcare Group Polyclinics.\n\n**Action needed:** Yes \u2014 pay $17.00 within 30 days.\n\n**What it says:** You visited the polyclinic on 3 July 2026.\nThe consultation and medicine cost $42.00.\nYou received a subsidy of $25.00.\nYou now owe $17.00.\n\n**By when:** Within 30 days.\n\n$17.00\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact National Healthcare Group Polyclinics directly.",
+            "summary": "\ud83d\udcec This letter is from National Healthcare Group Polyclinics.\n\n**Action needed:** Yes, pay $17.00 within 30 days.\n\n**What it says:** You visited the polyclinic on 3 July 2026.\nThe cost of your consultation and medicine was $42.00.\nYou received a subsidy of $25.00.\nYou now owe $17.00.\n\n**By when:** Within 30 days.\n\n$17.00\n\nYou can pay at any polyclinic counter or through the HealthHub app.\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact National Healthcare Group Polyclinics directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -400,7 +596,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from National Healthcare Group Polyclinics.\n\n**Action needed:** Yes \u2014 pay $17.00 within 30 days.\n\n**What it says:** You visited the polyclinic on 3 July 2026.\nThe doctor's visit and medicines cost $42.00.\nYou received a subsidy of $25.00.\nYou now need to pay $17.00.\n\n**By when:** Within 30 days.\n\n$17.00\n\nYou can pay at any polyclinic counter or through the HealthHub app.\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact National Healthcare Group Polyclinics directly.",
+            "summary": "\ud83d\udcec This letter is from National Healthcare Group Polyclinics.\n\n**Action needed:** Yes. **Pay $17.00 within 30 days.**\n\n**What it says:** You visited the polyclinic on 3 July 2026.\nThe consultation and medicine cost $42.00.\nYou received a subsidy of $25.00.\nYou now need to pay $17.00.\n\n**By when:** Within 30 days.\n\n$17.00\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact National Healthcare Group Polyclinics directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -418,7 +614,7 @@
       "dental_clinic_bill": {
         "runs": [
           {
-            "summary": "\ud83d\udcec This letter is from SmileCare Dental Clinic.\n\n**Action needed:** Yes \u2014 **pay $80.00 by 10 Aug 2026**.\n\n**What it says:** You had a scaling and polishing treatment on 10 Jul 2026.\nThe cost was $80.00.\nYou still owe this amount.\nYou can pay using PayNow or at the clinic counter.\n\n**By when:** 10 Aug 2026\n\n$80.00\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact SmileCare Dental Clinic directly.",
+            "summary": "\ud83d\udcec This letter is from SmileCare Dental Clinic.\n\n**Action needed:** Yes, **pay $80.00 by 10 Aug 2026**.\n\n**What it says:** You had a scaling and polishing treatment on 10 Jul 2026.\nThe cost was $80.00.\nYou still owe $80.00.\nYou can pay at the clinic counter or use PayNow.\n\n**By when:** 10 Aug 2026\n\n$80.00\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact SmileCare Dental Clinic directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,
@@ -429,7 +625,7 @@
             }
           },
           {
-            "summary": "\ud83d\udcec This letter is from SmileCare Dental Clinic.\n\n**Action needed:** Yes \u2014 **pay $80.00 by 10 Aug 2026**.\n\n**What it says:** You had a scaling and polishing treatment on 10 Jul 2026.\nThe cost was $80.00.\nYou still owe this amount.\nYou can pay using PayNow or at the clinic counter.\n\n**By when:** 10 Aug 2026\n\n$80.00\n\n**Note:** This is an automated summary \u2014 for anything important, please check the original letter or contact SmileCare Dental Clinic directly.",
+            "summary": "\ud83d\udcec This letter is from SmileCare Dental Clinic.\n\n**Action needed:** Yes, **pay $80.00 by 10 Aug 2026**.\n\n**What it says:** You had scaling and polishing treatment on 10 Jul 2026.\nThe cost was $80.00.\nYou still owe this amount.\nYou can pay at the clinic counter or through PayNow.\n\n**By when:** 10 Aug 2026\n\n$80.00\n\n**Note:** This is an automated summary. For anything important, please check the original letter or contact SmileCare Dental Clinic directly.",
             "checks": {
               "action_needed_correct": true,
               "amount_correct": true,

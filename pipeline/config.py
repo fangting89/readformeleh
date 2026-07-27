@@ -1,26 +1,10 @@
-"""Environment configuration for the pipeline. Load `.env` and validate
-required variables here, rather than reading `os.environ` ad hoc elsewhere."""
+"""Environment configuration.
 
-import os
+`require_env` now lives in `lehcore` (see `pipeline/client.py`'s docstring
+for why); re-exported here so `app/twilio_client.py` and existing tests
+keep working unchanged.
+"""
 
-from dotenv import load_dotenv
+from lehcore.client import require_env
 
-load_dotenv()
-
-
-def require_env(name: str) -> str:
-    """Returns a required environment variable.
-
-    Args:
-        name: The environment variable name.
-
-    Returns:
-        The variable's value.
-
-    Raises:
-        RuntimeError: If the variable is unset or empty.
-    """
-    value = os.environ.get(name)
-    if not value:
-        raise RuntimeError(f"{name} is not set, check your .env file.")
-    return value
+__all__ = ["require_env"]
