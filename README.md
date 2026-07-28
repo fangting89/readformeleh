@@ -36,20 +36,18 @@ Two of this project's real-world-validation eval specimens
 (`scam_real_police_warrant`, `scam_real_pdpc`) are reconstructed directly
 from published SPF/PDPC advisories describing this exact pattern.
 
-## Relevance to HTX
+## Design principles: AI safety and governance
 
 The forced tool-use gate (`classify_letter`, `temperature=0`, tool choice
-never `"auto"`) and the deterministic, no-LLM-judge eval harness are the
-same engineering discipline HTX's own AI programme names explicitly:
-"AI Central" governance/assurance, and "AI safety and security" as a
-stated AI R&D focus area. The adversarial prompt-injection specimen
-(`scam_prompt_injection`) and the two real-advisory specimens above are
-the concrete evidence behind that claim, not just an assertion.
+never `"auto"`) and the deterministic, no-LLM-judge eval harness reflect a
+broader practice: safety-critical decisions in an LLM pipeline should be
+structured, evaluated, and auditable, not left to free-text prompting.
+The adversarial prompt-injection specimen (`scam_prompt_injection`) and
+the two real-advisory specimens above are the concrete evidence behind
+that claim, not just an assertion.
 
-This project sits on the citizen-facing, preventive side of a problem
-HTX's own institutional tools (e.g. Digital & Information Forensics'
-DIGEST, Q Team's Online Casino Hunter) address from the investigator
-side - helping someone before they're a victim, rather than triaging
+This project sits on the citizen-facing, preventive side of the scam
+problem - helping someone before they're a victim, rather than triaging
 evidence after the fact.
 
 ## Vision: one senior-protection toolkit, not three disconnected tools
@@ -76,10 +74,10 @@ hand-copied per project.
 ## Sovereignty
 
 This project uses the Anthropic API directly, not an on-prem/air-gapped
-model. HTX's own 2026 direction treats sovereign AI (on-prem, air-gapped,
-e.g. their NGINE/Phoenix stack) as "non-negotiable" for public safety
-data specifically because sensitive citizen data shouldn't leave a
-controlled environment. For a personal portfolio project handling only
+model. Public-safety and other regulated deployments increasingly treat
+on-prem/air-gapped ("sovereign") AI as a hard requirement, since sensitive
+citizen data shouldn't leave a controlled environment. For a personal
+portfolio project handling only
 synthetic specimens (no real letters, no real NRIC/financial data - see
 `CLAUDE.md`'s no-content-persistence invariant), a managed API is the
 right tradeoff for cost and iteration speed. A real institutional
