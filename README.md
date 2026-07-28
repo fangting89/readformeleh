@@ -9,7 +9,9 @@ classification - phishing, prize, impersonation, romance, investment -
 for the reader's own awareness), hardened against prompt-injection
 attempts embedded in the letter photo itself, and a self-consistency
 check that re-reads a letter's key figures independently before trusting
-them.
+them. A companion to
+[checkformeleh](https://github.com/fangting89/checkformeleh) and
+[isitrealah](https://github.com/fangting89/isitrealah).
 
 **Live demo:** [readformeleh.streamlit.app](https://readformeleh.streamlit.app)
 (runs the real pipeline against pre-loaded sample letters, doesn't send or
@@ -60,8 +62,8 @@ seniors are vulnerable:
 | Need | Status | Evidence |
 |---|---|---|
 | Comprehension (official mail) | Built - readformeleh | Government-impersonation is seniors' top scam vector |
-| Access (support schemes) | Built - checkformeleh | Schemes scattered across fragmented gov sites |
-| Authenticity (AI content, scams) | Built - isitrealah | 15% of scam victims now 65+, nearly doubled in a year |
+| Access (support schemes) | Built - [checkformeleh](https://github.com/fangting89/checkformeleh) | Schemes scattered across fragmented gov sites |
+| Authenticity (AI content, scams) | Built - [isitrealah](https://github.com/fangting89/isitrealah) | 15% of scam victims now 65+, nearly doubled in a year |
 | Social connection (loneliness) | Named next module | 1 in 3 seniors feel lonely most of the time; isolation is linked to 3-5 fewer years of life at 60 ([MOH](https://www.moh.gov.sg/newsroom/addressing-loneliness-and-psychological-distress-among-seniors-living-alone/), [source](https://www.alamiclinic.com/blog/how-loneliness-impacts-elderly-health-in-singapore-and-what-we-can-do)) |
 
 The social-connection module (a befriender/activity-finder) would reuse
