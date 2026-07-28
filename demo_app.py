@@ -90,7 +90,8 @@ DISCLAIMER = (
 )
 
 st.set_page_config(page_title="ReadForMeLeh", page_icon="🙏")
-st.title("ReadForMeLeh")
+st.title("Government Letter Summarizer & Scam Detector")
+st.caption("readformeleh")
 st.caption(
     "See what happens after a photo of a government letter is sent on "
     "WhatsApp, using the real pipeline behind the bot."

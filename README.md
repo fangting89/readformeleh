@@ -1,6 +1,6 @@
-# readformeleh
+# Government Letter Summarizer & Scam Detector
 
-A WhatsApp-native bot that summarizes official government letters (CPF,
+**readformeleh** — A WhatsApp-native bot that summarizes official government letters (CPF,
 IRAS, HDB, town council) into plain-language English, Mandarin, Malay, or
 Tamil, for Singaporean seniors and their caregivers. Includes a
 scam-detection safety layer that withholds a summary and refers to
